@@ -20,6 +20,11 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    ignore:
+      # Stay on Python 3.12 (owner's decision, B2). Patch updates and rebuilt images
+      # of 3.12 are still proposed; 3.13 and later are not.
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   # Images in compose.yaml (DynamoDB Local).
   - package-ecosystem: docker-compose
@@ -44,6 +49,11 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    ignore:
+      # Stay on Node 26, the current LTS line. A new major version is a decision,
+      # not an automatic update.
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
 
   # npm packages in package.json and package-lock.json.
   - package-ecosystem: npm
@@ -52,3 +62,7 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    ignore:
+      # TypeScript 7 is not accepted by typescript-eslint yet (B2 build notes).
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
