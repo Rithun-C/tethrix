@@ -1,6 +1,6 @@
 # Bolt B1: Foundation
 
-- Status: Design approved 2026-11-15. Files written and checked. Waiting for owner review, then the GitHub steps
+- Status: Done. Approved by the owner on 2026-11-15
 - Date: 2026-11-15
 - Tasks: B1-01 to B1-11
 - AWS cost: none. Nothing in this bolt touches AWS.
@@ -239,7 +239,19 @@ only, no change to resources), `README.md`, glossary, threat model, findings log
 
 F-013 (SSE-S3 instead of a KMS key; Trivy and Semgrep). Reasons are next to the resources.
 
-### Still to do
+### Closing checks (2026-11-15)
 
-Owner review, first commit, GitHub repo and settings, the test pull request, journal.
-The steps are in `docs/runbooks/repo-and-ci.md`.
+Done by the owner following `docs/runbooks/repo-and-ci.md`, then read back from GitHub.
+
+| Check | Result |
+|---|---|
+| First commit | One commit, author is the GitHub no-reply address, history scan clean |
+| First CI run on `main` | `static-checks` green, 48 seconds |
+| Repo security features | Secret scanning, push protection, Dependabot alerts and private vulnerability reporting on |
+| Actions settings | Selected actions only, SHA pinning required, read-only token, approval for all external contributors |
+| Ruleset `main` | Active, no bypass: pull request required (0 approvals), check `all-checks` required, no force push, no deletion |
+| Direct push to `main` | Refused |
+| Test pull request with a badly formatted Terraform file | CI failed and the merge was blocked; pull request closed, branch deleted |
+
+Because of the ruleset, this closing update is itself the first change to go through a
+pull request.

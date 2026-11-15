@@ -21,7 +21,7 @@ with our permissions, so a bad one can steal what we can reach. The background i
 | pre-commit hook repos | Full commit SHA, version in a comment | `.pre-commit-config.yaml` |
 | Terraform providers | Exact version, plus hashes in the lock file | `versions.tf`, `.terraform.lock.hcl` |
 | tflint plugin | Exact version (tflint checks its signature) | `.tflint.hcl` |
-| Python packages (from B2) | Exact versions with hashes in a lockfile | `uv.lock` |
+| Python packages (from B2) | Exact versions with hashes in a lockfile, managed with uv (not pip), installed with `uv sync --locked` | `pyproject.toml`, `uv.lock` |
 | npm packages (from B2) | Exact versions in a lockfile, installed with `npm ci` | `package-lock.json` |
 
 Never `latest`, never a version range, never a tag alone for an image or an action.
@@ -56,7 +56,7 @@ against the registry before it is added.
 ## 3. Updates
 
 - Dependabot opens pull requests once a week (`.github/dependabot.yml`): GitHub Actions
-  now; Docker, pip and npm from B2. It waits 7 days after a release.
+  now; Docker, uv and npm from B2. It waits 7 days after a release.
 - A Dependabot pull request passes the same CI checks as any other. Read the release
   notes before merging. Never merge a red pull request.
 - Security alerts (Dependabot alerts on GitHub) are handled within a week for High and
@@ -85,6 +85,9 @@ Dependabot does not read `tools/versions.env`. Check once a month:
 | Semgrep | Any finding from the public rules or our own |
 | Trivy | High or Critical |
 | pip-audit, npm audit (from B2) | High or Critical |
+
+pip-audit is only a scanner. It does not install anything, so it stays even though the
+backend uses uv: it reads the package list that `uv export` writes from `uv.lock`.
 
 A finding can be accepted instead of fixed only with a comment in the code that gives
 the reason (`#checkov:skip=...`, `#trivy:ignore:...`, `# nosemgrep: ...`) and, if it is

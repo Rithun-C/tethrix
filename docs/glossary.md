@@ -107,6 +107,7 @@ they first come up. AWS service names are explained in the bolt where they are f
 | Trivy | Scanner for container images. |
 | gitleaks | Scanner that looks for secrets in the repo. |
 | pip-audit, npm audit | Scanners for vulnerable Python and JavaScript dependencies. |
+| uv | A fast Python package and project manager. It replaces pip and virtualenv, and writes the lockfile `uv.lock`. |
 | CI/CD | Automation that tests every change (CI) and deploys it (CD). Ours runs on GitHub Actions. |
 | OIDC | A way for GitHub to prove its identity to AWS and get temporary access, so no permanent AWS key is stored anywhere. |
 | Account default | A setting made once for the whole account (or region) that applies to every resource created afterwards. A safety net for resources that forget a setting. |

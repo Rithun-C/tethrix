@@ -15,7 +15,7 @@ A personal Notion-style productivity app: todos, habit tracker, journal, rich-te
 and a dashboard.
 
 - Frontend: React (Vite + TypeScript)
-- Backend: FastAPI (Python)
+- Backend: FastAPI (Python), packages managed with uv
 - MVP order: Todos -> Habits -> Journal -> Pages -> Dashboard + data export
 - In scope if time allows: attachments, reminders
 - Out of scope: search, sharing
@@ -137,6 +137,7 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | 2026-11-15 | Credit reserve 50 USD (labs stop below it), lab budget 40 USD in total (I-11) |
 | 2026-11-15 | Scanners run as Docker images pinned by digest in `tools/versions.env`; CI runs the same `make` targets (B1) |
 | 2026-11-15 | The app's Terraform stack is `infra/app/`. Licence: MIT (B1) |
+| 2026-11-15 | Backend Python packages are managed with uv (`pyproject.toml` + `uv.lock`), not pip. pip-audit stays as the scanner |
 
 ## Open decisions
 
@@ -217,6 +218,9 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 - 2026-11-15: B1 design approved (Docker-pinned scanners, `infra/envs/lab/` renamed to
   `infra/app/`, MIT licence). All B1 files written; every check passes (`make gitleaks` needs the git repo, so the
   secret scan was run on staged files in a scratch copy; build notes in
-  `docs/bolts/B1-foundation.md` section 8; accepted finding F-013). No git repo yet.
-  Waiting for: owner review, first commit, GitHub repo and settings
-  (`docs/runbooks/repo-and-ci.md`), test pull request, journal.
+  `docs/bolts/B1-foundation.md` section 8; accepted finding F-013).
+- 2026-11-15: B1 done and approved. Public GitHub repo created and pushed, first CI run
+  green, security features on, ruleset on `main` (pull request + `all-checks`), hooks
+  installed, gates proven with a refused direct push and a blocked test pull request.
+  From now on every change goes through a branch and a pull request. Next: bolt B2
+  (local dev with Docker Compose), design not yet proposed.

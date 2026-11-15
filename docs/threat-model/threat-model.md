@@ -105,7 +105,7 @@ Status: Planned (mitigation designed, not built yet), Done, Accepted.
 |---|---|---|---|---|---|---|---|
 | T-006 | Pages | Stored XSS: saved content runs script in the browser | High | Server checks content matches the editor schema; no raw HTML rendering; strict CSP; safe link handling (US-42) | XSS payload test list | B8 | Planned |
 | T-007 | API input | Oversized or malformed input | Medium | Validation on every field; body size limit; 400 errors | Unit tests | B5 onward | Planned |
-| T-008 | Supply chain | Malicious or vulnerable dependency or base image | High | Exact pins and lockfiles; image digests; pip-audit, npm audit, Trivy in CI; check every new package is the real one | CI gates | B1, B6 | Planned |
+| T-008 | Supply chain | Malicious or vulnerable dependency or base image | High | Exact pins and lockfiles; image digests; pip-audit, npm audit, Trivy in CI; check every new package is the real one | CI gates | B1, B6 | Done in B1: pins, digests, Trivy. pip-audit and npm audit follow in B2 |
 | T-009 | Terraform state | State changed or deleted | Medium | Private, versioned, encrypted bucket; HTTPS only; locking; `prevent_destroy` | Done in G-06 | G-06 | Done |
 | T-010 | Pages, journal | Two tabs silently overwrite each other | Low | Optimistic concurrency, 409 on conflict (I-03) | Unit test | B8 | Planned |
 
@@ -123,7 +123,7 @@ Status: Planned (mitigation designed, not built yet), Done, Accepted.
 | T-013 | API, DynamoDB (TB3) | IDOR: user A reads user B's data | High | Every key built from the token's `sub`; one partition per user; 404 for others' items (I-08) | Two-user test for every endpoint | B4 onward | Planned |
 | T-014 | Logs, errors | Journal text appears in logs, traces or error messages | High | Never log request or response bodies; redaction; generic errors (US-33) | Test that greps logs for a marker string | B8 | Planned |
 | T-015 | Browser | Tokens stolen through an XSS bug | Medium | Access token in memory only; short lifetimes; CSP; XSS defences (T-006) | Review | B4 | Accepted (residual risk, see ADR-0003) |
-| T-016 | Repo | Secret, key or account ID committed to the public repo | High | gitleaks in pre-commit and CI; no secrets in code; Parameter Store for any secret | CI gate | B1 | Planned |
+| T-016 | Repo | Secret, key or account ID committed to the public repo | High | gitleaks in pre-commit and CI; no secrets in code; Parameter Store for any secret | CI gate | B1 | Done |
 | T-017 | API errors | Stack traces or internals shown to users | Medium | One error handler; 500 responses carry no details | Unit test | B3 | Planned |
 | T-018 | Data at rest | Stored data read from disks or backups | Low | DynamoDB and S3 encrypted by default; journal encryption ADR | Settings in Terraform | B8 | Planned |
 | T-019 | Export | Export contains another user's data, or its file leaks | Medium | Export built only from the caller's partition; short-lived link if S3 is used | Two-user test | B9 | Planned |
@@ -148,7 +148,7 @@ the app down.
 | T-025 | CI/CD | Deploy role does more than deploy | High | Separate read-only plan role and apply role; scoped actions | Access Analyzer, review | B6 | Planned |
 | T-026 | Admin user | Admin login stolen | High | MFA, no access keys, `aws login` temporary credentials (ADR-0005) | Prowler | G-04 | Done |
 | T-027 | Sessions | A signed-out user's access token still works | Low | Lifetime 60 minutes; account deletion is enforced by the profile check | Unit test | B4 | Accepted (max 60 minutes) |
-| T-028 | CI/CD | A pull request from a fork runs malicious code in our CI | Medium | `pull_request` trigger only (never `pull_request_target`); read-only token; no secrets in CI; approval required before an outside contributor's workflow runs; actions pinned by SHA | Workflow review; GitHub settings (runbook `repo-and-ci.md`) | B1 | Planned |
+| T-028 | CI/CD | A pull request from a fork runs malicious code in our CI | Medium | `pull_request` trigger only (never `pull_request_target`); read-only token; no secrets in CI; approval required before an outside contributor's workflow runs; actions pinned by SHA | Workflow review; GitHub settings (runbook `repo-and-ci.md`) | B1 | Done |
 
 ## 5. Summary
 
@@ -156,6 +156,7 @@ the app down.
 |---|---|---|---|---|
 | Threats | 11 | 12 | 5 | 28 |
 | Already done (Week 0) | | | | 4 |
+| Done in B1 (T-008 in part, T-016, T-028) | | | | 3 |
 | Accepted with reason | | | | 2 |
 
 The High risks that need the most care: IDOR (T-013), stored XSS (T-006), journal text in
@@ -167,3 +168,4 @@ logs (T-014), JWT checks (T-001), supply chain (T-008) and the CI deploy role (T
 |---|---|---|
 | 2026-11-15 | Inception | v1: 27 threats from the I-10 diagrams |
 | 2026-11-15 | B1 | T-028 added (fork pull request runs code in CI). T-008 and T-016 controls written; they move to Done when B1 closes |
+| 2026-11-15 | B1 closed | T-016 and T-028 Done, verified on GitHub (ruleset, push protection, fork approval, failing pull request blocked). T-008 done for what exists; package audits follow in B2 |
