@@ -1,0 +1,80 @@
+# DynamoDB Local: a Deployment (keeps one pod running) and a Service (gives it a stable
+# name, "dynamodb", that other pods can call).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dynamodb
+  namespace: productivity-app
+  labels:
+    app: dynamodb
+  annotations:
+    checkov.io/skip1: CKV_K8S_15=The image is pinned by digest, so it can never change; pulling it again every time adds nothing
+    checkov.io/skip2: CKV_K8S_40=User 1000 is the non-root user built into the DynamoDB Local image; its files belong to that user
+    checkov.io/skip3: CKV_K8S_35=No secrets exist in this lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dynamodb
+  template:
+    metadata:
+      labels:
+        app: dynamodb
+    spec:
+      # The pod does not need to talk to the Kubernetes API, so it gets no API token.
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: dynamodb
+          image: amazon/dynamodb-local:3.3.2@sha256:6ada631ec7aa5fc83446855eb17233e3dad184fec47477e8140c6c569cfe0c86
+          imagePullPolicy: IfNotPresent
+          args: ["-jar", "DynamoDBLocal.jar", "-inMemory", "-sharedDb"]
+          ports:
+            - containerPort: 8000
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          # It has no health page, so the probes only check that the port is open.
+          readinessProbe:
+            tcpSocket:
+              port: 8000
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        # The root file system is read-only; /tmp is a scratch folder that lives and
+        # dies with the pod.
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dynamodb
+  namespace: productivity-app
+spec:
+  selector:
+    app: dynamodb
+  ports:
+    - port: 8000
+      targetPort: 8000

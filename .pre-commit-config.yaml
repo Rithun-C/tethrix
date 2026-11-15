@@ -18,6 +18,8 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        # Kubernetes manifests hold several objects in one file, separated by "---".
+        args: [--allow-multiple-documents]
 
   - repo: local
     hooks:

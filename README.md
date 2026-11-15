@@ -26,7 +26,7 @@ see `docs/runbooks/local-dev.md`.
 | `infra/bootstrap/` | Terraform for state bucket, budgets and account guardrails |
 | `infra/modules/` | Reusable Terraform modules |
 | `infra/app/` | The app's Terraform stack |
-| `infra/labs/` | One Terraform root per time-boxed lab, each with its own state |
+| `infra/labs/` | One folder per time-boxed lab, each with its own state. `kind/` is the local Kubernetes lab |
 | `Makefile` | Shortcuts for the checks: `make help` lists them |
 | `tools/versions.env` | Every pinned scanner version |
 | `.semgrep/` | Our own Semgrep rules and their tests |

@@ -12,3 +12,9 @@ file, so `terraform destroy` in a lab cannot touch the app or the bootstrap stac
 4. Add the folder to `TF_STACKS` in the `Makefile` so the checks cover it.
 
 The process and the reasons are in `docs/inception/11-cost-model.md`, section 5.
+
+## Labs
+
+| Folder | What | Cost |
+|---|---|---|
+| `kind/` | Kubernetes on the laptop (B2-07). Not Terraform and nothing in AWS: a cluster config and manifests, checked by checkov, Trivy and Semgrep | None |

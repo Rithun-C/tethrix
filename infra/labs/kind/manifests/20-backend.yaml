@@ -1,0 +1,94 @@
+# The backend: the same "runtime" image that goes to Lambda in B3.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: productivity-app
+  labels:
+    app: backend
+  annotations:
+    checkov.io/skip1: CKV_K8S_43=The image is built on this laptop and loaded into kind, so it has no registry digest. In AWS it comes from ECR by digest (B3)
+    checkov.io/skip2: CKV_K8S_14=Same reason; the tag is fixed, not "latest"
+    checkov.io/skip3: CKV_K8S_15=The image exists only inside the kind node. "Always" would try to download it and fail
+    checkov.io/skip4: CKV_K8S_35=No secrets exist in this lab. The values "local" are placeholders that DynamoDB Local ignores
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backend
+          image: productivity-app-backend:runtime
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: LOG_LEVEL
+              value: INFO
+            - name: DYNAMODB_TABLE
+              value: productivity-app-data
+            - name: DYNAMODB_ENDPOINT_URL
+              value: http://dynamodb:8000
+            # Placeholders: the AWS SDK needs some value, DynamoDB Local ignores it.
+            - name: AWS_ACCESS_KEY_ID
+              value: local
+            - name: AWS_SECRET_ACCESS_KEY
+              value: local
+            - name: AWS_DEFAULT_REGION
+              value: us-east-1
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          # Readiness: "may this pod receive requests?" Failing takes it out of the
+          # Service until it passes again.
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8080
+            periodSeconds: 5
+          # Liveness: "is this pod stuck?" Failing makes Kubernetes restart it.
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: productivity-app
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8080
+      targetPort: 8080
