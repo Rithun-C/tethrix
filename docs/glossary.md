@@ -209,3 +209,15 @@ they first come up. AWS service names are explained in the bolt where they are f
 | IPv4 / IPv6 | The old and the new version of internet addresses. A network can have a good route for one and a bad route for the other. |
 | ASGI | The standard way Python web servers (uvicorn) hand requests to web apps (FastAPI). |
 | Middleware | Code that wraps every request, before and after the route runs. Ours writes the request log line. |
+| Vite | The tool that serves the frontend during development (with hot reload) and builds the final files. |
+| Dev server | A local web server for development only. It rebuilds on every change and is never used in AWS. |
+| Production build | The finished, shrunk frontend files (`dist/`) that are uploaded to S3. |
+| Single-page app (SPA) | A site with one HTML file; JavaScript swaps the screens. The server must answer every address with that one file. |
+| nginx | A small, fast web server. Used here only in the frontend `static` image. |
+| ESLint | A linter for JavaScript and TypeScript. |
+| Prettier | A tool that formats code the same way every time, so layout is never discussed. |
+| Vitest | The test runner for the frontend. |
+| Mock | A stand-in used in a test, for example a fake `fetch` so no real server is called. |
+| Peer dependency | A package that another package needs you to install yourself, in a version range it accepts. |
+| Install script | Code a package runs on your machine when it is installed. Switched off here (`ignore-scripts`). |
+| Source map | A file that maps built code back to the original source. Not published here. |

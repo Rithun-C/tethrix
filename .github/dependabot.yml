@@ -1,8 +1,6 @@
 # Dependabot opens a pull request when a pinned dependency has a newer version.
 # Its pull requests pass through the same CI checks as ours.
 #
-# npm is added with the frontend (B2, pull request 2).
-#
 # cooldown: wait a week after a release before proposing it. Most malicious releases
 # are found and removed within days.
 
@@ -34,6 +32,22 @@ updates:
   # Python packages in pyproject.toml and uv.lock.
   - package-ecosystem: uv
     directory: /app/backend
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
+  # Base images in the frontend Dockerfile (Node, nginx).
+  - package-ecosystem: docker
+    directory: /app/frontend
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
+  # npm packages in package.json and package-lock.json.
+  - package-ecosystem: npm
+    directory: /app/frontend
     schedule:
       interval: weekly
     cooldown:

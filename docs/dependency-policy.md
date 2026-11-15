@@ -22,7 +22,7 @@ with our permissions, so a bad one can steal what we can reach. The background i
 | Terraform providers | Exact version, plus hashes in the lock file | `versions.tf`, `.terraform.lock.hcl` |
 | tflint plugin | Exact version (tflint checks its signature) | `.tflint.hcl` |
 | Python packages (from B2) | Exact versions with hashes in a lockfile, managed with uv (not pip), installed with `uv sync --locked` | `pyproject.toml`, `uv.lock` |
-| npm packages (from B2) | Exact versions in a lockfile, installed with `npm ci` | `package-lock.json` |
+| npm packages (from B2) | Exact versions in a lockfile with a hash per package, installed with `npm ci`; install scripts off (`ignore-scripts=true`) | `package.json`, `package-lock.json`, `.npmrc` |
 
 Never `latest`, never a version range, never a tag alone for an image or an action.
 
@@ -49,6 +49,7 @@ Write the answers in the bolt's journal entry.
 8. Is the newest version at least a week old? Most malicious releases are found and
    removed within days. For Python this is enforced: `exclude-newer = "7 days"` in
    `app/backend/pyproject.toml` makes uv ignore anything newer when it writes the lockfile.
+   For npm it is `min-release-age=7` in `app/frontend/.npmrc`.
 
 This applies to Claude's suggestions too. An AI model can suggest a package name that
 does not exist, and attackers register such names. Every suggested package is checked

@@ -105,7 +105,7 @@ Status: Planned (mitigation designed, not built yet), Done, Accepted.
 |---|---|---|---|---|---|---|---|
 | T-006 | Pages | Stored XSS: saved content runs script in the browser | High | Server checks content matches the editor schema; no raw HTML rendering; strict CSP; safe link handling (US-42) | XSS payload test list | B8 | Planned |
 | T-007 | API input | Oversized or malformed input | Medium | Validation on every field; body size limit; 400 errors | Unit tests | B5 onward | Planned |
-| T-008 | Supply chain | Malicious or vulnerable dependency or base image | High | Exact pins and lockfiles; image digests; pip-audit, npm audit, Trivy in CI; check every new package is the real one | CI gates | B1, B6 | Done in B1: pins, digests, Trivy. pip-audit and npm audit follow in B2 |
+| T-008 | Supply chain | Malicious or vulnerable dependency or base image | High | Exact pins and lockfiles; image digests; pip-audit, npm audit, Trivy in CI; check every new package is the real one | CI gates | B1, B6 | Done (B1: pins, digests, Trivy. B2: pip-audit, npm audit, install scripts off, cooldowns) |
 | T-009 | Terraform state | State changed or deleted | Medium | Private, versioned, encrypted bucket; HTTPS only; locking; `prevent_destroy` | Done in G-06 | G-06 | Done |
 | T-010 | Pages, journal | Two tabs silently overwrite each other | Low | Optimistic concurrency, 409 on conflict (I-03) | Unit test | B8 | Planned |
 
@@ -174,3 +174,4 @@ logs (T-014), JWT checks (T-001), supply chain (T-008) and the CI deploy role (T
 | 2026-11-15 | B1 | T-028 added (fork pull request runs code in CI). T-008 and T-016 controls written; they move to Done when B1 closes |
 | 2026-11-15 | B1 closed | T-016 and T-028 Done, verified on GitHub (ruleset, push protection, fork approval, failing pull request blocked). T-008 done for what exists; package audits follow in B2 |
 | 2026-11-15 | B2, pull request 1 | T-029, T-030 and T-031 added and mitigated (local ports, secrets in images, container rights). T-008: pip-audit now runs in CI; npm audit follows with the frontend |
+| 2026-11-15 | B2, pull request 2 | T-008: npm audit now runs in CI and npm install scripts are off, so every planned control is in place. No new threats from the frontend skeleton: it has no user input and no stored data yet |

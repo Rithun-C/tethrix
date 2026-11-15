@@ -321,3 +321,64 @@ a week old (SR-81).
   client loggers are now kept at warning level (SR-42).
 - A build that "hangs" is usually waiting on the network. The Builds tab in Docker
   Desktop shows it; a direct download test over IPv4 and IPv6 found the cause.
+
+## 10. Build notes: pull request 2, frontend (2026-11-15)
+
+### Files written
+
+| Task | Files |
+|---|---|
+| B2-02 | `app/frontend/package.json`, `package-lock.json`, `.npmrc`, `index.html`, `tsconfig.json`, `vite.config.ts`, `eslint.config.js`, Prettier settings, `src/` (11 files, 2 of them tests) |
+| B2-03 | `app/frontend/Dockerfile` (stages `dev`, `build`, `static`), `.dockerignore`, `nginx.conf` |
+| B2-04 | `frontend` service in `compose.yaml`; `make up` now starts everything |
+| B2-06 | Frontend `make` targets, CI job `frontend`, frontend image in `image-scan`, Dependabot for npm and the frontend images |
+
+### Pinned versions
+
+Node image `26.13.0-trixie-slim` and `nginx-unprivileged:1.30.6-alpine-slim`, by digest.
+Packages: react and react-dom 19.3.1, react-router 8.5.1; development: vite 8.3.6,
+@vitejs/plugin-react 6.2.1, typescript 6.0.3, vitest 5.1.0, jsdom 31.0.0, Testing
+Library (react 16.3.3, jest-dom 7.0.1, user-event 14.6.8), eslint 10.14.0, @eslint/js
+10.0.1, typescript-eslint 8.72.1, eslint-plugin-react-hooks 7.1.1, globals 17.14.0,
+prettier 3.9.10, @types/node 26.6.6, @types/react and @types/react-dom 19.3.0. Each was
+checked on the npm registry: real name, source repository, at least a week old (SR-81).
+The lockfile has a hash for every package and nothing from outside the npm registry.
+
+### Results
+
+| Check | Result |
+|---|---|
+| `make lint-frontend` | Prettier, ESLint (strict, type-aware) and `tsc` clean |
+| `make test-frontend` | 11 passed |
+| `make audit-frontend` | No High or Critical; 9 Moderate with one cause (F-018) |
+| `make hadolint` | Clean for both Dockerfiles |
+| `make image-scan` | Backend as before; frontend: 1 High in the nginx base image, accepted with an end date (F-017) |
+| `make check` (everything) | Pass |
+| `make up`, then requests to `localhost:5173` | Page loads; `/api/v1/health` through the proxy gives 200 with a request ID; an unknown API path gives the error format |
+| The `static` image, run read-only with all capabilities dropped | Serves the built site as uid 101; unknown addresses fall back to `index.html`; security headers on pages and on asset files; no source maps; 30 MB |
+
+Not checked by me: the page in a real browser window, and hot reload after an edit.
+The owner does both in the review.
+
+### What differs from the design
+
+| Design | Built | Why |
+|---|---|---|
+| Latest TypeScript | TypeScript 6.0.3, not 7 | typescript-eslint, the linter, does not accept TypeScript 7 yet. Revisit when it does |
+| Package list in the design | Added `@eslint/js`, `globals`, `@types/node`, `@types/react`, `@types/react-dom` | Parts of ESLint's standard set-up and type definitions; the design named only the main packages |
+| Vite started plainly | Always with `--configLoader runner` | Vite's default writes a temporary file beside `node_modules`; our containers have a read-only file system |
+| Cache header on asset files with `add_header` | `expires 1y` | Semgrep finding F-019: `add_header` in a location drops the server's security headers |
+| `USER node` | `USER 1000:1000` | hadolint: a number can be checked by Kubernetes, a name cannot |
+| Audits through Compose | Audits and lock commands use the selectable network (`BUILD_NETWORK`) | The slow IPv4 route also made pip-audit time out |
+| Not in the design | ESLint also forbids `dangerouslySetInnerHTML` and `innerHTML` (SR-35) | The same rule as Semgrep, but shown in the editor while typing |
+| Not in the design | A test set-up that makes any unmocked `fetch` fail | A test can never call a real server by accident |
+| The `static` image passes `/api` on to the backend | Not yet: it serves files only | Needed only inside Kubernetes; added with the lab in pull request 3 |
+
+### Lessons from this pull request
+
+- The newest version is not always usable: one tool lagging behind (the linter) decides
+  the version of another (TypeScript). npm said so clearly as a peer dependency conflict.
+- A scanner earned its place: the nginx header mistake (F-019) looked right and passed
+  a quick test of the home page, because only asset files lost their headers.
+- Read-only containers find hidden writes early: Vite's temporary config file and
+  Vitest's cache both tried to write next to `node_modules`.
