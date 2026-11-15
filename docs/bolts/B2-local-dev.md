@@ -409,7 +409,7 @@ nothing is pulled for them.
 | Trivy config scan of the manifests | Pass |
 | Semgrep | Pass |
 | `make check` (everything) | Pass (22 backend and 11 frontend tests, all scanners, both image scans) |
-| The lab on a real cluster | **Not run by Claude.** Installing kind was not possible in Claude's session, so the manifests are checked by scanners only. The owner's run of the lab is the first real test |
+| The lab on a real cluster | Run by the owner with kind v0.33.0; every step behaved as described (reported 2026-11-16); cluster deleted afterwards. **Not run by Claude.** Installing kind was not possible in Claude's session, so the manifests are checked by scanners only. The owner's run of the lab is the first real test |
 
 Parts most likely to need a fix when the lab is first run: the network policies (they
 depend on kind's built-in network plugin enforcing them, which it does since kind

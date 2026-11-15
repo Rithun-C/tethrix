@@ -2,7 +2,7 @@
 
 - Bolt / task: B2-07
 - Date written: 2026-11-15
-- Status: Planned
+- Status: Done by the owner on 2026-11-15 and 2026-11-16
 - Theory that goes with it: `docs/theory/containers-and-eks.md`
 
 ## 1. Goal
@@ -26,9 +26,9 @@ other labs do not apply.
 
 Tested with kind v0.33.0 and the node image for Kubernetes v1.34.11.
 
-Status of these instructions: the files pass checkov, Trivy and Semgrep, but the steps
-have not been run on a cluster yet (kind was not installed when they were written).
-If a step does not behave as described, note it in section 6 and ask Claude.
+Status of these instructions: the owner ran every step on a kind cluster and reported
+that all of them behaved as described (2026-11-16). Claude checked the files with
+checkov, Trivy and Semgrep but did not run the cluster itself.
 
 ## 3. Words used
 
@@ -163,7 +163,7 @@ Delete a backend pod and watch the Deployment replace it:
 
 ```sh
 kubectl get pods -l app=backend
-kubectl delete pod <one backend pod name>
+kubectl delete pod NAME   # replace NAME with one pod name from the line above
 kubectl get pods -l app=backend
 ```
 
@@ -321,9 +321,9 @@ Expected: no clusters, and no `lab-control-plane` container.
 
 | Check | Result |
 |---|---|
-| Cluster deleted (`kind get clusters` is empty) | |
-| kind version used | |
-| Steps that did not behave as described | |
+| Cluster deleted (`kind get clusters` is empty) | Yes, checked 2026-11-16 |
+| kind version used | v0.33.0 |
+| Steps that did not behave as described | None reported |
 | Time taken | |
 
 Questions to answer in your own words:
