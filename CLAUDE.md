@@ -247,5 +247,8 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   Claude's session); the owner's run is the first real test. Build notes in
   `docs/bolts/B2-local-dev.md` section 11. To close B2: owner merges, installs kind,
   does the lab, writes the journal entry, then approves. B3 does not start before that.
+- 2026-11-16: Pull request 3 merged. The owner did the kind lab (kind v0.33.0): every
+  step behaved as described, cluster deleted. B2-07 done. Still open before B2 closes:
+  owner's review of the theory note (B2-08), journal entry, and the owner's approval.
 - Local note: this laptop's network needs `BUILD_NETWORK := host` in `local.mk` (git
   ignored) for image builds; see `docs/runbooks/local-dev.md`, "Problems".
