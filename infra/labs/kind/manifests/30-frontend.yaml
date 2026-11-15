@@ -1,0 +1,121 @@
+# The frontend: the "static" image (nginx with the built files).
+#
+# The image only serves files. Inside the cluster it must also pass /api requests on to
+# the backend, the job the Vite dev server does on the laptop and CloudFront does in
+# AWS. That setting is added here with a ConfigMap, not baked into the image.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-nginx
+  namespace: productivity-app
+data:
+  # A ConfigMap holds settings as files or values that pods can mount. This one
+  # replaces the image's /etc/nginx/conf.d/default.conf.
+  default.conf: |
+    server {
+        listen 8080;
+        root /usr/share/nginx/html;
+        server_tokens off;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer" always;
+        add_header Content-Security-Policy "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
+        location / {
+            try_files $uri /index.html;
+        }
+
+        location /assets/ {
+            expires 1y;
+            try_files $uri =404;
+        }
+
+        # "backend" is the name of the backend Service. Cluster DNS turns it into an
+        # address, and the Service spreads requests over the backend pods.
+        location /api/ {
+            proxy_pass http://backend:8080;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: productivity-app
+  labels:
+    app: frontend
+  annotations:
+    checkov.io/skip1: CKV_K8S_43=The image is built on this laptop and loaded into kind, so it has no registry digest
+    checkov.io/skip2: CKV_K8S_14=Same reason; the tag is fixed, not "latest"
+    checkov.io/skip3: CKV_K8S_15=The image exists only inside the kind node. "Always" would try to download it and fail
+    checkov.io/skip4: CKV_K8S_40=User 101 is the non-root user built into the nginx-unprivileged image
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: frontend
+          image: productivity-app-frontend:static
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: nginx-config
+          configMap:
+            name: frontend-nginx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: productivity-app
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 8080
+      targetPort: 8080

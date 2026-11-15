@@ -18,6 +18,7 @@ Status: Open, Fixed, Accepted (give the reason), False positive.
 | 2026-11-15 | B1 scanners: gitleaks 8.30.1, tflint 0.66.0, checkov 3.4.5, Semgrep 1.185.0, Trivy 0.76.2 | Whole repo, before the first commit | checkov 179 | 0 after fixes | - | 4 High (Trivy, Semgrep), all the same accepted cause: F-013 | None kept; rerun with `make check` |
 | 2026-11-15 | B2 pull request 1: `make check` with hadolint 2.15.1, Trivy image scan and pip-audit 2.10.1 added | Whole repo and the backend `runtime` image | checkov 286; pip-audit 69 packages clean | 0 after fixes | - | 2 High in the image (F-015, accepted until 2026-12-15); 1 Semgrep finding fixed (F-016) | None kept; rerun with `make check` |
 | 2026-11-15 | B2 pull request 2: `make check` with the frontend, npm audit and the frontend image scan added | Whole repo and both shipped images | checkov 356; pip-audit clean; 11 frontend and 22 backend tests | 0 after fixes | - | 1 High in the nginx base image (F-017, accepted until 2026-12-15); 9 Moderate in npm, one cause (F-018); 1 Semgrep finding fixed (F-019) | None kept; rerun with `make check` |
+| 2026-11-15 | B2 pull request 3: `make check` with the checkov `kubernetes` framework added | Whole repo, both shipped images and the kind lab manifests | checkov Kubernetes 83 (12 skipped with reasons) | 0 after fixes | - | No new findings. While writing: checkov asked for network policies (`CKV2_K8S_6`), which were added | None kept; rerun with `make check` |
 
 ## Findings
 

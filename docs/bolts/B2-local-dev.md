@@ -382,3 +382,57 @@ The owner does both in the review.
   a quick test of the home page, because only asset files lost their headers.
 - Read-only containers find hidden writes early: Vite's temporary config file and
   Vitest's cache both tried to write next to `node_modules`.
+
+## 11. Build notes: pull request 3, Kubernetes lab and theory (2026-11-15)
+
+### Files written
+
+| Task | Files |
+|---|---|
+| B2-07 | `infra/labs/kind/kind-config.yaml`, `infra/labs/kind/manifests/` (6 files: namespace, DynamoDB Local, backend, frontend, table and seed Job, network policies), `infra/labs/kind/README.md` (11 steps) |
+| B2-08 | `docs/theory/containers-and-eks.md` |
+| B2-06 | `Makefile`: checkov now also scans Kubernetes manifests |
+
+### Pinned versions
+
+Node image `kindest/node:v1.34.11` by digest, taken from the kind v0.33.0 release notes
+(each kind release lists the node images built for it). The same Kubernetes minor
+version as the installed kubectl (1.34). DynamoDB Local uses the same digest as
+`compose.yaml`. The backend and frontend images are the ones `make image-build` builds;
+nothing is pulled for them.
+
+### Results
+
+| Check | Result |
+|---|---|
+| checkov, `kubernetes` framework | 83 passed, 0 failed, 12 skipped. Skips with a reason on each object: `CKV_K8S_43` (our own images have no registry digest), `CKV_K8S_14` and `CKV_K8S_15` (local images, `imagePullPolicy: Never`), `CKV_K8S_35` (the only "secret" is the fake local key), `CKV_K8S_40` (user IDs come from the images) |
+| Trivy config scan of the manifests | Pass |
+| Semgrep | Pass |
+| `make check` (everything) | Pass (22 backend and 11 frontend tests, all scanners, both image scans) |
+| The lab on a real cluster | **Not run by Claude.** Installing kind was not possible in Claude's session, so the manifests are checked by scanners only. The owner's run of the lab is the first real test |
+
+Parts most likely to need a fix when the lab is first run: the network policies (they
+depend on kind's built-in network plugin enforcing them, which it does since kind
+v0.24), the Job that reads its scripts from a ConfigMap, and the nginx config that
+passes `/api/` on to the backend Service.
+
+### What differs from the design
+
+| Design | Built | Why |
+|---|---|---|
+| Deployments and Services | Also a Job (`db-init`), two ConfigMaps and four NetworkPolicies | The table has to be created somewhere, as `db-init` does in Compose. checkov asked for network policies (`CKV2_K8S_6`), and they make a good lab step |
+| Security settings on the pods | Also enforced by the namespace (Pod Security Admission, level "restricted") | The cluster then refuses an unsafe pod, which shows the difference between "we set it" and "it cannot be unset" |
+| 8 steps | 11 steps | Network policy and Pod Security got their own steps; set-up is split in smaller pieces |
+| The `static` image passes `/api` on (left open in pull request 2) | Done with a ConfigMap that replaces the nginx config in the lab only | The image itself stays a plain file server; the proxy address is a cluster detail |
+| Not in the design | The `check-yaml` commit hook now allows several documents in one file | A manifest file holds several objects separated by `---`; the hook refused the first commit |
+| Scripts in the image for the Job | Scripts mounted from a ConfigMap made from `app/backend/scripts/` | The `runtime` image does not contain the local-only scripts, and should not |
+
+### Lessons from this pull request
+
+- Kubernetes manifests repeat the hardening from Compose in other words: `read_only`
+  becomes `readOnlyRootFilesystem`, `cap_drop` becomes `capabilities.drop`. The ideas
+  carry over; the spelling does not.
+- By default every pod in a cluster can reach every other pod. That is the opposite of
+  what most people expect, and a scanner pointed it out.
+- A check that cannot be run should be said out loud, not hidden: the lab is marked as
+  untested in its README until the owner has run it.

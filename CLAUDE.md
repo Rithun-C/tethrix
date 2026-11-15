@@ -239,7 +239,13 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   frontend image scan in CI. `make check` passes; `make up` serves
   http://localhost:5173 with `/api` proxied to the backend. Accepted findings F-017
   (musl in the nginx base image, until 2026-12-15) and F-018 (minimatch in lint tools).
-  Build notes in `docs/bolts/B2-local-dev.md` section 10. Waiting for owner review and
-  merge. Next: pull request 3 (kind lab, theory, closing docs).
+  Build notes in `docs/bolts/B2-local-dev.md` section 10. Merged.
+- 2026-11-15: B2 pull request 3 written on branch `b2/kind-lab`: kind lab
+  (`infra/labs/kind/`: cluster config, 6 manifests, README with 11 steps), theory note
+  `docs/theory/containers-and-eks.md`, checkov now scans Kubernetes manifests. The lab
+  passes the scanners but has NOT been run on a cluster (kind could not be installed in
+  Claude's session); the owner's run is the first real test. Build notes in
+  `docs/bolts/B2-local-dev.md` section 11. To close B2: owner merges, installs kind,
+  does the lab, writes the journal entry, then approves. B3 does not start before that.
 - Local note: this laptop's network needs `BUILD_NETWORK := host` in `local.mk` (git
   ignored) for image builds; see `docs/runbooks/local-dev.md`, "Problems".

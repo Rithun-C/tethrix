@@ -1,0 +1,12 @@
+# A namespace is a named area inside the cluster. Everything for this lab lives in it,
+# so deleting the namespace removes the whole app.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: productivity-app
+  labels:
+    # Pod Security Admission: Kubernetes itself refuses any pod in this namespace that
+    # does not meet the "restricted" standard (non-root, no extra capabilities, no
+    # privilege escalation, a seccomp profile). Step 9 of the lab tries to break it.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

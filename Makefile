@@ -89,7 +89,7 @@ gitleaks-staged: ## Look for secrets in staged changes (used by pre-commit)
 	@$(DOCKER_RUN) $(GITLEAKS_IMAGE) git --pre-commit --staged --redact --no-banner --verbose .
 
 checkov: ## Terraform and workflow security settings
-	$(DOCKER_RUN) $(CHECKOV_IMAGE) -d /src --framework terraform github_actions dockerfile \
+	$(DOCKER_RUN) $(CHECKOV_IMAGE) -d /src --framework terraform github_actions dockerfile kubernetes \
 	  --skip-path '\.terraform' --skip-path '\.cache' --quiet --compact
 
 semgrep-test: ## Prove our own Semgrep rules catch what they should

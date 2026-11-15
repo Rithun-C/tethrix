@@ -1,0 +1,79 @@
+# NetworkPolicy: which pods may open connections to which pods.
+#
+# Without any policy, every pod in a cluster can reach every other pod. These rules
+# allow only the paths the app needs:
+#
+#   anyone -> frontend -> backend -> dynamodb <- db-init
+#
+# So if the frontend were broken into, it still could not reach the database.
+# (A port-forward and the health probes come from the node itself and are not blocked.)
+
+# 1. Nothing may connect to any pod in this namespace, unless a rule below allows it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: productivity-app
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+# 2. The frontend accepts connections on 8080.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-allow-web
+  namespace: productivity-app
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8080
+---
+# 3. The backend accepts connections only from the frontend.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-allow-frontend
+  namespace: productivity-app
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - port: 8080
+---
+# 4. The database accepts connections only from the backend and the init job.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dynamodb-allow-backend
+  namespace: productivity-app
+spec:
+  podSelector:
+    matchLabels:
+      app: dynamodb
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: backend
+        - podSelector:
+            matchLabels:
+              app: db-init
+      ports:
+        - port: 8000

@@ -12,7 +12,7 @@ you would use it, and why we are not using it here.
 |---|---|---|
 | AWS Organizations and SCPs | Joining upgrades the account to Paid | B11-09 |
 | Control Tower | Same as above | B11-09 |
-| EKS | Hourly control-plane cost; Kubernetes is practised locally with kind | B2-08 |
+| EKS: [containers-and-eks.md](containers-and-eks.md), section 5 | Hourly control-plane cost; Kubernetes is practised locally with kind | B2-08 |
 | NAT Gateway | Hourly cost plus data charges | B3-10 |
 | Transit Gateway | Hourly cost; needs several VPCs | B11-10 |
 | Network Firewall | Hourly cost | B11-10 |
@@ -28,7 +28,7 @@ you would use it, and why we are not using it here.
 | Terraform basics, explained through G-06: [terraform-basics.md](terraform-basics.md) | G-06 |
 | Terraform state, locking, drift, modules: [terraform-state-and-modules.md](terraform-state-and-modules.md) | B1-08 |
 | Supply-chain security: [supply-chain-security.md](supply-chain-security.md) | B1-09 |
-| Container internals and image hardening | B2-08 |
+| Container internals, image hardening, orchestration: [containers-and-eks.md](containers-and-eks.md) | B2-08 |
 | CloudFront, OAC vs OAI, SigV4 | B3-09 |
 | VPC basics; why this Lambda is outside a VPC | B3-10 |
 | The default VPC: what it is, why deleting it is good practice, why we keep it for the EC2 lab | B3-10 |

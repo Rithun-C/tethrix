@@ -1,0 +1,73 @@
+# A Job runs a pod until it finishes successfully, once. This one creates the table and
+# the seed data, like the db-init container in Docker Compose.
+#
+# The scripts are not in the runtime image (it holds only what ships). The lab puts
+# them into a ConfigMap named "backend-scripts" (step 3 of the README), and the Job
+# mounts that ConfigMap as a folder.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-init
+  namespace: productivity-app
+  annotations:
+    checkov.io/skip1: CKV_K8S_43=The image is built on this laptop and loaded into kind, so it has no registry digest
+    checkov.io/skip2: CKV_K8S_14=Same reason; the tag is fixed, not "latest"
+    checkov.io/skip3: CKV_K8S_15=The image exists only inside the kind node. "Always" would try to download it and fail
+    checkov.io/skip4: CKV_K8S_35=No secrets exist in this lab. The values "local" are placeholders that DynamoDB Local ignores
+spec:
+  backoffLimit: 4
+  # Remove the finished Job by itself after ten minutes.
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: db-init
+    spec:
+      restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: db-init
+          image: productivity-app-backend:runtime
+          imagePullPolicy: Never
+          command: ["sh", "-c", "python /scripts/local_table.py && python /scripts/seed.py"]
+          env:
+            - name: DYNAMODB_TABLE
+              value: productivity-app-data
+            - name: DYNAMODB_ENDPOINT_URL
+              value: http://dynamodb:8000
+            - name: AWS_ACCESS_KEY_ID
+              value: local
+            - name: AWS_SECRET_ACCESS_KEY
+              value: local
+            - name: AWS_DEFAULT_REGION
+              value: us-east-1
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: scripts
+          configMap:
+            name: backend-scripts

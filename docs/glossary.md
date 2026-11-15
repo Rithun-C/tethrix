@@ -221,3 +221,26 @@ they first come up. AWS service names are explained in the bolt where they are f
 | Peer dependency | A package that another package needs you to install yourself, in a version range it accepts. |
 | Install script | Code a package runs on your machine when it is installed. Switched off here (`ignore-scripts`). |
 | Source map | A file that maps built code back to the original source. Not published here. |
+| Namespace (Linux) | A kernel feature that gives a process its own view of the system (processes, network, files). One of the things a container is made of. |
+| cgroup | "Control group": a kernel feature that limits and counts the CPU and memory a process may use. |
+| Image layer | One step of an image's file changes. Layers are stacked; a file deleted in a later layer is still in the earlier one. |
+| Distroless image | A base image with only the language runtime: no shell and no package manager. |
+| seccomp | A kernel filter that blocks system calls a normal app never needs. |
+| Orchestrator | Software that runs containers across machines: restarts, scaling, rollouts. Kubernetes is one. |
+| Cluster | A set of machines (nodes) run by Kubernetes. |
+| Node | One machine in a cluster. In kind, a node is a Docker container. |
+| Control plane | The parts of Kubernetes that decide (API server, etcd, controllers, scheduler). EKS runs these for an hourly price. |
+| kubectl | The command-line tool that talks to a Kubernetes cluster. |
+| Manifest | A YAML file that says what should exist in a cluster. |
+| Pod | The smallest unit Kubernetes runs: one or more containers that share a network address. |
+| Deployment | A Kubernetes object that keeps a set number of copies of a pod running and rolls out new versions. |
+| ReplicaSet | The object a Deployment uses to keep the copies; one per version. |
+| Service (Kubernetes) | A stable name and address in front of a changing set of pods. |
+| Namespace (Kubernetes) | A named area in a cluster that groups objects. Not the same as a Linux namespace. |
+| ConfigMap | Settings or small files stored in the cluster and given to pods. |
+| Job (Kubernetes) | Runs a pod until it finishes successfully, once. |
+| Probe | A check Kubernetes runs against a container. Readiness: may it get traffic? Liveness: must it be restarted? |
+| Rolling update | Replacing pods with a new version a few at a time, so the service stays up. |
+| NetworkPolicy | Rules for which pods may connect to which pods. Without one, every pod can reach every pod. |
+| Pod Security Admission | A built-in Kubernetes check that refuses pods which do not meet a security level (ours: "restricted"). |
+| Port-forward | A temporary tunnel from a port on the laptop to a pod or Service. |
