@@ -222,5 +222,6 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 - 2026-11-15: B1 done and approved. Public GitHub repo created and pushed, first CI run
   green, security features on, ruleset on `main` (pull request + `all-checks`), hooks
   installed, gates proven with a refused direct push and a blocked test pull request.
-  From now on every change goes through a branch and a pull request. Next: bolt B2
-  (local dev with Docker Compose), design not yet proposed.
+  From now on every change goes through a branch and a pull request.
+- 2026-11-15: Bolt B2 (local dev) design proposed in `docs/bolts/B2-local-dev.md`, waiting
+  for approval. Seven decisions are listed in its section 6.
