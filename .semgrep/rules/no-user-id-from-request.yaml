@@ -1,0 +1,84 @@
+# SR-20 / T-013: IDOR (user A reading user B's data).
+#
+# The user is always taken from the verified token (its `sub` claim), through a FastAPI
+# dependency. If a route accepts a user ID from the path, the query string or the body,
+# a caller can put someone else's ID there. So no route may have such a parameter, and
+# no request model may have such a field.
+
+rules:
+  - id: no-user-id-route-parameter
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Route parameter "$PARAM" lets the caller choose the user (SR-20). Take the user
+      from the token with the current-user dependency instead.
+    metadata:
+      requirement: SR-20
+      threat: T-013
+      cwe: "CWE-639: Authorization Bypass Through User-Controlled Key"
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              @$ROUTER.$METHOD(...)
+              def $FUNC(...):
+                  ...
+          - pattern-inside: |
+              @$ROUTER.$METHOD(...)
+              async def $FUNC(...):
+                  ...
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(get|post|put|patch|delete|head|options|api_route)$
+      - pattern-either:
+          - pattern: 'def $FUNC(..., $PARAM, ...): ...'
+          - pattern: 'def $FUNC(..., $PARAM: $TYPE, ...): ...'
+          - pattern: 'def $FUNC(..., $PARAM = $DEFAULT, ...): ...'
+          - pattern: 'def $FUNC(..., $PARAM: $TYPE = $DEFAULT, ...): ...'
+      - metavariable-regex:
+          metavariable: $PARAM
+          regex: ^(user_id|userid|owner_id|ownerid|sub)$
+      - focus-metavariable: $PARAM
+
+  - id: no-user-id-in-route-path
+    languages: [python]
+    severity: ERROR
+    message: >-
+      The route path contains a user ID placeholder (SR-20). Paths never name the
+      user; the user comes from the token.
+    metadata:
+      requirement: SR-20
+      threat: T-013
+      cwe: "CWE-639: Authorization Bypass Through User-Controlled Key"
+    patterns:
+      - pattern: $ROUTER.$METHOD("$PATH", ...)
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(get|post|put|patch|delete|head|options|api_route)$
+      - metavariable-regex:
+          metavariable: $PATH
+          regex: .*\{(user_id|userid|owner_id|ownerid|sub)(:[^}]*)?\}.*
+
+  - id: no-user-id-in-request-model
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Request model field "$FIELD" lets the caller choose the user (SR-20). Remove the
+      field and set the user from the token in the route. Response models are allowed
+      to have it: name them ...Response or ...Out.
+    metadata:
+      requirement: SR-20
+      threat: T-013
+      cwe: "CWE-639: Authorization Bypass Through User-Controlled Key"
+    patterns:
+      - pattern-inside: |
+          class $MODEL(BaseModel):
+              ...
+      - metavariable-regex:
+          metavariable: $MODEL
+          regex: ^(?!.*(Response|Out)$).*$
+      - pattern-either:
+          - pattern: "$FIELD: $TYPE"
+          - pattern: "$FIELD: $TYPE = $DEFAULT"
+      - metavariable-regex:
+          metavariable: $FIELD
+          regex: ^(user_id|userid|owner_id|ownerid|sub)$

@@ -1,0 +1,36 @@
+# SR-35 / T-006: stored XSS through the rich-text editor.
+#
+# React escapes text before showing it, so <script> typed into a page title is shown as
+# text. These two APIs switch that protection off and insert raw HTML. If the HTML came
+# from a user's page content, a script in it would run in the reader's browser.
+
+rules:
+  - id: no-dangerously-set-inner-html
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      dangerouslySetInnerHTML inserts raw HTML and bypasses React's escaping (SR-35).
+      Render the content through React components or the editor's own renderer.
+    metadata:
+      requirement: SR-35
+      threat: T-006
+      cwe: "CWE-79: Cross-site Scripting"
+    pattern-either:
+      - pattern: <$EL ... dangerouslySetInnerHTML={...} ... />
+      - pattern: "{..., dangerouslySetInnerHTML: $X, ...}"
+
+  - id: no-inner-html-assignment
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Assigning to innerHTML or outerHTML, or calling insertAdjacentHTML, inserts raw
+      HTML (SR-35). Use textContent for text, or React components.
+    metadata:
+      requirement: SR-35
+      threat: T-006
+      cwe: "CWE-79: Cross-site Scripting"
+    pattern-either:
+      - pattern: $EL.innerHTML = $X
+      - pattern: $EL.innerHTML += $X
+      - pattern: $EL.outerHTML = $X
+      - pattern: $EL.insertAdjacentHTML(...)

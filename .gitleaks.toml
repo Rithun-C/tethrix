@@ -1,0 +1,43 @@
+# gitleaks settings. Keeps all the built-in rules and adds our own.
+#
+# Why our own rules: the built-in ones look for keys and tokens. An AWS account ID is not
+# a secret in that sense, so gitleaks ignores it, but this project's rules say it must
+# never be in the public repo.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "aws-account-id-in-arn"
+description = "AWS account ID inside an ARN"
+regex = '''arn:aws[a-z-]*:[a-z0-9-]*:[a-z0-9-]*:(\d{12}):'''
+secretGroup = 1
+
+  [[rules.allowlists]]
+  description = "Example account IDs used in AWS documentation"
+  regexes = ['''^(123456789012|111122223333|444455556666|000000000000)$''']
+
+[[rules]]
+id = "aws-account-id-labelled"
+description = "A 12-digit number next to the words account ID"
+regex = '''(?i)account[_ -]?id["'\s:=]{1,5}(\d{12})\b'''
+secretGroup = 1
+
+  [[rules.allowlists]]
+  description = "Example account IDs used in AWS documentation"
+  regexes = ['''^(123456789012|111122223333|444455556666|000000000000)$''']
+
+[[rules]]
+id = "state-bucket-with-account-id"
+description = "State or log bucket name that ends in the account ID"
+regex = '''productivity-app-[a-z-]+-(\d{12})\b'''
+secretGroup = 1
+
+  [[rules.allowlists]]
+  description = "Example account IDs used in AWS documentation"
+  regexes = ['''^(123456789012|111122223333|444455556666|000000000000)$''']
+
+# Folders that never enter git and are slow to scan (provider binaries, tool caches).
+[[allowlists]]
+description = "Downloaded providers and tool caches"
+paths = ['''(^|/)\.terraform/''', '''(^|/)\.cache/''']

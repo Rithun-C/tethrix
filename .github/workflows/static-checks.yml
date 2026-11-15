@@ -1,0 +1,110 @@
+# Static checks: every scanner, on every pull request and on every push to main.
+# "Static" means the code is read, not run. Nothing here touches AWS.
+#
+# Safety rules for this file:
+# - Trigger is pull_request, never pull_request_target. pull_request_target runs with
+#   access to secrets even for a pull request from a stranger's fork.
+# - The token can only read the repo. There are no secrets and no AWS access.
+# - Third-party actions are pinned by commit SHA. A tag such as v7 can be moved to point
+#   at different code; a SHA cannot.
+# - The scanners are the same pinned Docker images as on the laptop (tools/versions.env),
+#   started through the same make targets.
+
+name: static-checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A new push to the same branch cancels the run that is still going.
+concurrency:
+  group: static-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the whole history, not only the last commit
+          persist-credentials: false
+      - run: make gitleaks
+
+  terraform:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read the pinned Terraform version
+        run: grep '^TERRAFORM_VERSION=' tools/versions.env >> "$GITHUB_ENV"
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+      - run: make fmt-check
+      - run: make validate
+
+  tflint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The token is only used to download the tflint AWS plugin without hitting
+      # GitHub's limit for anonymous downloads. It is read-only.
+      - run: make lint
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  checkov:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: make checkov
+
+  semgrep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: make semgrep
+
+  trivy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: make trivy
+
+  # One job that passes only if every job above passed. The branch rule on main
+  # requires this single check, so adding a scanner later needs no rule change.
+  all-checks:
+    if: always()
+    needs: [gitleaks, terraform, tflint, checkov, semgrep, trivy]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Fail if any check failed or was skipped
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then exit 1; fi
+          done

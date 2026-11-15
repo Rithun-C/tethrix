@@ -1,0 +1,35 @@
+# Checks that run on `git commit`, on the files being committed. Fast ones only; the
+# slower scanners run in `make scan` and in CI.
+#
+# Install once per clone: make hooks
+# Run by hand on every file: pre-commit run --all-files
+#
+# These can be skipped with `git commit --no-verify`. That is why CI runs them again.
+
+repos:
+  # Pinned by commit SHA, not by tag: a tag can be moved, a SHA cannot.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # v6.0.0
+    hooks:
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+
+  - repo: local
+    hooks:
+      # Uses the same pinned gitleaks image as CI (tools/versions.env). Needs Docker running.
+      - id: gitleaks-staged
+        name: gitleaks (secrets and account ID in staged changes)
+        entry: make gitleaks-staged
+        language: system
+        pass_filenames: false
+
+      - id: terraform-fmt
+        name: terraform fmt
+        entry: terraform fmt -check -diff
+        language: system
+        files: \.tf$

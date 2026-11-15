@@ -1,0 +1,9 @@
+# Copy this file to backend.hcl (git ignores backend.hcl) and fill in the bucket name
+# from `terraform output state_bucket_name`. Used with:
+#   terraform init -backend-config=backend.hcl -migrate-state
+
+bucket       = "productivity-app-tfstate-ACCOUNT_ID"
+key          = "bootstrap/terraform.tfstate"
+region       = "us-east-1"
+encrypt      = true
+use_lockfile = true

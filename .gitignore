@@ -1,0 +1,76 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+# Backend settings contain the account ID; only the .example file is committed.
+backend.hcl
+# .terraform.lock.hcl is committed on purpose: it pins provider versions.
+
+# Secrets and environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+.aws/
+credentials
+*accessKeys*.csv
+*credentials*.csv
+
+# Security scan reports (contain account ID and resource names)
+prowler-output/
+
+# Node
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Excel lock files
+~$*.xlsx
+~$*.xls
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Tool caches written by the Makefile targets (tflint plugin, Trivy database)
+.cache/
+.semgrep_logs/
+
+# Scratch folder for practice files (may contain the account ID)
+tmp/

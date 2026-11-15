@@ -1,0 +1,13 @@
+# Paths Semgrep does not scan. Having this file replaces Semgrep's built-in list, so the
+# usual entries are repeated here.
+
+# The rule test files contain the bad patterns on purpose.
+.semgrep/tests/
+
+.git/
+.cache/
+.terraform/
+node_modules/
+dist/
+.venv/
+__pycache__/

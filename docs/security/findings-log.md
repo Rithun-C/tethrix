@@ -1,0 +1,40 @@
+# Security findings log
+
+Every finding from a scanner, review, test or drill goes here, including the ones we
+decide to accept.
+
+This repo is public. Describe findings without secrets, account IDs or exploit details
+for anything still open.
+
+Severity: Critical, High, Medium, Low, Info.
+Status: Open, Fixed, Accepted (give the reason), False positive.
+
+## Scan history
+
+| Date | Tool | Scope | Pass | Fail | Manual | Fail by severity | Report |
+|---|---|---|---|---|---|---|---|
+| 2026-11-12 | Prowler 5.46.0 | us-east-1 + global | 74 | 64 | 5 | 2 critical, 4 high, 37 medium, 21 low | Local only: `~/prowler-output/baseline-2026-11-12.*` |
+| 2026-11-12 | Prowler 5.46.0, 4 checks only | F-001 recheck | - | 0 | - | No findings: the leftover resources no longer exist | None written (Prowler writes no report when there are no findings) |
+| 2026-11-15 | B1 scanners: gitleaks 8.30.1, tflint 0.66.0, checkov 3.4.5, Semgrep 1.185.0, Trivy 0.76.2 | Whole repo, before the first commit | checkov 179 | 0 after fixes | - | 4 High (Trivy, Semgrep), all the same accepted cause: F-013 | None kept; rerun with `make check` |
+
+## Findings
+
+Similar checks are grouped into one finding. The Prowler check IDs are listed so the
+O-05 rerun can be compared.
+
+| ID | Date | Source | Severity | Finding | Decision / fix | Status | Closed on |
+|---|---|---|---|---|---|---|---|
+| F-001 | 2026-11-12 | Prowler G-11 | High | Leftovers from the G-03 credit activities, not managed by Terraform: IAM role `rds-monitoring-role` (RDS Enhanced Monitoring), log group `RDSOSMetrics`, unattached customer policy `AWSLambdaBasicExecutionRole-*`. The role also fails the confused deputy check. Checks: `iam_role_cross_service_confused_deputy_prevention`, `cloudwatch_log_group_kms_encryption_enabled`, `cloudwatch_log_group_retention_policy_specific_days_enabled` (for RDSOSMetrics). | Fix now: delete all three with the CLI. Lesson: console wizards create side resources that a "what is running" sweep must also check (IAM roles, policies, log groups). Add to the G-12 session-end runbook. Verified: the owner deleted all three with the CLI; a targeted Prowler rerun of the 4 related checks returned no findings (nothing left to check). | Fixed | 2026-11-12 |
+| F-002 | 2026-11-12 | Prowler G-11 | Critical | User `admin` has `AdministratorAccess` attached directly. Checks: `iam_aws_attached_policy_no_administrative_privileges`, `iam_user_administrator_access_policy`, `iam_policy_attached_only_to_group_or_roles` (x3). | Accepted: the single human admin, justified in ADR-0005. Revisit in B11-07 (attach through a group, permission boundary). | Accepted | |
+| F-003 | 2026-11-12 | Prowler G-11 | High | Root user used 1 day ago. Check: `iam_avoid_root_usage`. | Accepted: expected one-time bootstrap use (G-01, G-03, G-04). Root is not used again; the O-05 rerun should pass. | Accepted | |
+| F-004 | 2026-11-12 | Prowler G-11 | Medium | Account contact details, security contact and security questions need a manual check. Checks: `account_maintain_current_contact_details`, `account_security_contact_information_is_registered`, `account_security_questions_are_registered_in_the_aws_account`. | Owner to confirm in the console (account settings, read-only) that alternate contacts from G-01 include a security contact. | Open | |
+| F-005 | 2026-11-12 | Prowler G-11 | High | No AWS Organizations: no SCPs, no organization Config aggregator, no Firewall Manager, no tag or AI opt-out policies. Checks: `organizations_scp_check_deny_regions`, `organizations_account_part_of_organizations`, `organizations_opt_out_ai_services_policy`, `organizations_tags_policies_enabled_and_attached`, `config_delegated_admin_and_org_aggregator_all_regions`, `fms_policy_compliant`. | Accepted: joining Organizations upgrades the account to the Paid plan (hard constraint). Covered as theory in B11-09. | Accepted | |
+| F-006 | 2026-11-12 | Prowler G-11 | Medium | Encryption uses SSE-S3, not KMS keys. Checks: `cloudtrail_kms_encryption_enabled`, `s3_bucket_kms_encryption` (x2). | Accepted: project cost rule (a KMS key costs about 1 USD a month). Data is still encrypted at rest. KMS is practised in the B8-03 lab. | Accepted | |
+| F-007 | 2026-11-12 | Prowler G-11 | Medium | Extra S3 protections not enabled on the two buckets: access logging, MFA delete, Object Lock, cross-region replication, event notifications. Checks: `s3_bucket_server_access_logging_enabled` (x2), `cloudtrail_logs_s3_bucket_access_logging_enabled`, `s3_bucket_no_mfa_delete` (x2), `cloudtrail_bucket_requires_mfa_delete`, `s3_bucket_object_lock` (x2), `s3_bucket_cross_region_replication` (x2), `s3_bucket_event_notifications_enabled` (x2). | Accepted, same reasons as the checkov skips in the code. MFA delete can only be turned on with root credentials, which conflicts with not using root. Object Lock would block the final destroy. Replication breaks the one-region rule. Theory notes in B10-07. | Accepted | |
+| F-008 | 2026-11-12 | Prowler G-11 | Medium | No CloudWatch alarms for security events (root use, sign-in without MFA, IAM, CloudTrail, network and S3 policy changes, unauthorized API calls) and CloudTrail is not sent to CloudWatch Logs. 14 `cloudwatch_*` checks plus `cloudtrail_cloudwatch_logging_enabled`. | Fix later: Operations task O-01. Kept as theory for now (owner decision 2026-11-12: too complex for this stage). Two ways to build it: CloudTrail to CloudWatch Logs with metric filters and alarms (what Prowler checks, costs per GB), or EventBridge rules on CloudTrail events to SNS email (free, but Prowler still reports FAIL). See `docs/theory/README.md`. | Open | |
+| F-009 | 2026-11-12 | Prowler G-11 | Medium | AWS Config recorder is off. Check: `config_recorder_all_regions_enabled`. | Accepted for now: Config is paid per recorded item. Practised in the B11-02 lab. | Accepted | |
+| F-010 | 2026-11-12 | Prowler G-11 | Low | No CloudTrail Insights or S3 data events. Checks: `cloudtrail_insights_exist`, `cloudtrail_s3_dataevents_read_enabled`, `cloudtrail_s3_dataevents_write_enabled`. | Accepted: both are paid. Theory note in O-04. | Accepted | |
+| F-011 | 2026-11-12 | Prowler G-11 | Medium | Bedrock and SageMaker checks: no guardrails, no invocation logging, no prompt management, no SageMaker monitoring; unused Bedrock permissions on `admin` and a service role. 6 `bedrock_*` and `sagemaker_*` checks plus `iam_*_access_not_stale_to_bedrock` (x3). | Not applicable: the project does not use Bedrock or SageMaker (the one Bedrock prompt was a G-03 credit activity). The stale permissions come from `AdministratorAccess` (see F-002). | Accepted | |
+| F-012 | 2026-11-12 | Prowler G-11 | Medium | Other checks that do not fit this project: VPCs only in one region, no backup vault, no SAML provider, no AWS Support role. Checks: `vpc_different_regions`, `backup_vaults_exist`, `iam_check_saml_providers_sts`, `iam_support_role_created`. | Accepted: one-region rule; no single sign-on provider (Identity Center needs Organizations); single-person account. Backups revisited in O-08. | Accepted | |
+| F-013 | 2026-11-15 | Trivy, Semgrep (B1) | High | State bucket, CloudTrail bucket and the trail use S3-managed encryption (SSE-S3), not a customer-managed KMS key. Checks: Trivy `AWS-0132` (two buckets), `AWS-0015` (trail); Semgrep `aws-cloudtrail-encrypted-with-cmk`. | Accepted: a KMS key costs about 1 USD a month and the project cost rule prefers SSE-S3. Same decision as the checkov skips `CKV_AWS_145` and `CKV_AWS_35` from G-06 and G-09. Ignore comments with the reason are next to each resource. | Accepted | |
+| F-014 | 2026-11-15 | gitleaks, own rule (B1) | Info | `infra/bootstrap/backend.hcl` holds the account ID. Found by a folder scan with the new rule `state-bucket-with-account-id`. | No leak: the file is in `.gitignore` and was never committed. It confirmed the rule works. `make gitleaks` now reads git only, so ignored files are not reported. | False positive | 2026-11-15 |
