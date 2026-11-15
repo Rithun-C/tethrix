@@ -1,0 +1,8 @@
+# Allow-list: everything is kept out of the image build, then only what the image
+# needs is let in. A stray file (notes, a .env, a key) can never end up in an image.
+*
+!pyproject.toml
+!uv.lock
+!src/
+**/__pycache__/
+**/*.pyc

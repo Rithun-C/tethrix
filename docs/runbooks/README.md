@@ -19,6 +19,7 @@ commands, how to verify it worked, and how to undo it.
 | [Session start and end checklist](session-checklist.md), with `scripts/sweep.sh` | G-12 |
 | [Emergency cost stop](emergency-cost-stop.md) | G-13 |
 | [Git repo, GitHub settings and CI](repo-and-ci.md) | B1-01, B1-03, B1-05 |
+| [Local development](local-dev.md) | B2 |
 
 ## Planned runbooks
 

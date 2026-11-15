@@ -1,0 +1,17 @@
+# Trivy findings we have accepted for now. Every entry needs a reason and an end date.
+# When the date passes, Trivy reports the finding again and the build fails, which
+# forces a fresh look. Each entry is also a row in docs/security/findings-log.md.
+
+vulnerabilities:
+  # F-015. zlib in the Debian layer of the python:3.12-slim base image.
+  # A fixed Debian package exists, but no rebuilt base image contains it yet. The bug
+  # is in zlib's gz* file-writing functions, which Python does not use (its gzip module
+  # is written on top of the plain compression functions), so our app cannot reach it.
+  # Ends by itself: Dependabot proposes the rebuilt base image, we merge it, and this
+  # entry is deleted.
+  - id: CVE-2026-85091
+    statement: "F-015: fixed in Debian, waiting for a rebuilt python base image; not reachable from Python"
+    expired_at: 2026-12-15
+  - id: CVE-2026-76844
+    statement: "F-015: same zlib package and fix as CVE-2026-85091"
+    expired_at: 2026-12-15

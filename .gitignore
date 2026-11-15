@@ -74,3 +74,6 @@ Thumbs.db
 
 # Scratch folder for practice files (may contain the account ID)
 tmp/
+
+# Per-laptop make settings (for example BUILD_NETWORK := host)
+local.mk

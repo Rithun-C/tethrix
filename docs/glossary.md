@@ -189,3 +189,23 @@ they first come up. AWS service names are explained in the bolt where they are f
 | Module (Terraform) | A folder of Terraform files used as a unit, with inputs and outputs. |
 | Blast radius | How much one mistake or break-in can damage. |
 | Defence in depth | Several independent layers of protection, so one failing layer is not the end. |
+| Dockerfile | The recipe for building a container image, one instruction per line. |
+| Multi-stage build | A Dockerfile with several stages; only the result of the build is copied into the final, smaller image. |
+| Docker Compose | A tool that starts several containers together from one file, `compose.yaml`. |
+| Bind mount | A folder on the laptop made visible inside a container. |
+| Hot reload | The app restarts or refreshes by itself when a source file changes. |
+| Proxy | A server that passes a request on to another server. |
+| CORS | Browser rules for when a page from one address may call an API on another address. Not needed here because pages and API share one address. |
+| DynamoDB Local | AWS's free program that behaves like DynamoDB and runs on the laptop. |
+| Health check | A cheap request that answers "is this service up?". |
+| Seed data | Made-up data loaded into a local database so there is something to test with. |
+| hadolint | A linter for Dockerfiles. |
+| kind | "Kubernetes in Docker": a real Kubernetes cluster that runs inside Docker on the laptop. |
+| Non-root user | A user inside a container without administrator rights, so a break-in can do less. |
+| Cooldown (dependencies) | A waiting time before a newly published version may be used, because most malicious releases are found within days. |
+| Build cache | Results of earlier build steps and downloads that Docker keeps, so the next build is faster. |
+| tmpfs | A folder that exists only in memory. Used for `/tmp` in containers whose file system is read-only. |
+| Linux capabilities | Separate pieces of root's power (for example opening low ports). Dropping them all leaves a container with only what an ordinary process can do. |
+| IPv4 / IPv6 | The old and the new version of internet addresses. A network can have a good route for one and a bad route for the other. |
+| ASGI | The standard way Python web servers (uvicorn) hand requests to web apps (FastAPI). |
+| Middleware | Code that wraps every request, before and after the route runs. Ours writes the request log line. |

@@ -1,5 +1,7 @@
-# Static checks: every scanner, on every pull request and on every push to main.
-# "Static" means the code is read, not run. Nothing here touches AWS.
+# Every check, on every pull request and on every push to main: the scanners, the
+# backend's tests and linters, and the image scan. Nothing here touches AWS.
+# (The file name is from bolt B1, when the checks only read code. It is kept because
+# the branch rule on main refers to this workflow's all-checks job.)
 #
 # Safety rules for this file:
 # - Trigger is pull_request, never pull_request_target. pull_request_target runs with
@@ -92,11 +94,35 @@ jobs:
           persist-credentials: false
       - run: make trivy
 
+  # The backend's own checks. They run inside its dev container, built from the
+  # Dockerfile, so CI uses the same Python and packages as the laptop.
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: make lint-backend
+      - run: make test-backend
+      - run: make audit-backend
+
+  # Dockerfile lint, then build the image that ships and scan it.
+  images:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: make hadolint
+      - run: make image-scan
+
   # One job that passes only if every job above passed. The branch rule on main
   # requires this single check, so adding a scanner later needs no rule change.
   all-checks:
     if: always()
-    needs: [gitleaks, terraform, tflint, checkov, semgrep, trivy]
+    needs: [gitleaks, terraform, tflint, checkov, semgrep, trivy, backend, images]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
