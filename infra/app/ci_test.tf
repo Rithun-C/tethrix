@@ -1,0 +1,1 @@
+printf 'variable "x" {\ntype=string\n}\n'
