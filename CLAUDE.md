@@ -232,6 +232,14 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   Dockerfile, `compose.yaml`, local table and seed data, pip-audit, hadolint and image
   scan in CI. `make check` passes; `make up` answers on localhost:8080. Accepted finding
   F-015 (zlib in the base image, until 2026-12-15). Build notes in
-  `docs/bolts/B2-local-dev.md` section 9. Waiting for owner review and merge.
+  `docs/bolts/B2-local-dev.md` section 9. Merged.
+- 2026-11-15: B2 pull request 2 written on branch `b2/frontend`: React skeleton (Vite,
+  TypeScript 6.0.3 because the linter does not accept 7 yet, React Router), frontend
+  Dockerfile (`dev`, `build`, `static`), `frontend` service in Compose, npm audit and
+  frontend image scan in CI. `make check` passes; `make up` serves
+  http://localhost:5173 with `/api` proxied to the backend. Accepted findings F-017
+  (musl in the nginx base image, until 2026-12-15) and F-018 (minimatch in lint tools).
+  Build notes in `docs/bolts/B2-local-dev.md` section 10. Waiting for owner review and
+  merge. Next: pull request 3 (kind lab, theory, closing docs).
 - Local note: this laptop's network needs `BUILD_NETWORK := host` in `local.mk` (git
   ignored) for image builds; see `docs/runbooks/local-dev.md`, "Problems".

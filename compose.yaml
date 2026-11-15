@@ -1,4 +1,5 @@
 # The whole app on the laptop: `make up` starts it, `make down` stops it.
+# Open http://localhost:5173 in the browser.
 #
 # Local development only. Nothing here is used in AWS.
 #
@@ -82,3 +83,31 @@ services:
     depends_on:
       db-init:
         condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: app/frontend
+      target: dev
+    image: productivity-app-frontend:dev
+    <<: *hardening
+    environment:
+      # Where the Vite dev server passes /api requests on to (see vite.config.ts).
+      API_PROXY_TARGET: http://backend:8080
+    volumes:
+      # Read-only mounts: the container reads our code but cannot change it.
+      # node_modules is not mounted: it lives in the image, built from the lockfile.
+      - ./app/frontend/src:/app/src:ro
+      - ./app/frontend/index.html:/app/index.html:ro
+      - ./app/frontend/vite.config.ts:/app/vite.config.ts:ro
+      - ./app/frontend/tsconfig.json:/app/tsconfig.json:ro
+      - ./app/frontend/eslint.config.js:/app/eslint.config.js:ro
+      - ./app/frontend/package.json:/app/package.json:ro
+      - ./app/frontend/package-lock.json:/app/package-lock.json:ro
+      - ./app/frontend/.npmrc:/app/.npmrc:ro
+      - ./app/frontend/.prettierrc.json:/app/.prettierrc.json:ro
+      - ./app/frontend/.prettierignore:/app/.prettierignore:ro
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy

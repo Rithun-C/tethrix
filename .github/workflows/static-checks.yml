@@ -1,5 +1,5 @@
 # Every check, on every pull request and on every push to main: the scanners, the
-# backend's tests and linters, and the image scan. Nothing here touches AWS.
+# tests and linters of both apps, and the image scans. Nothing here touches AWS.
 # (The file name is from bolt B1, when the checks only read code. It is kept because
 # the branch rule on main refers to this workflow's all-checks job.)
 #
@@ -107,7 +107,20 @@ jobs:
       - run: make test-backend
       - run: make audit-backend
 
-  # Dockerfile lint, then build the image that ships and scan it.
+  # The frontend's own checks, inside its dev container.
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: make lint-frontend
+      - run: make test-frontend
+      - run: make audit-frontend
+
+  # Dockerfile lint, then build the images that ship and scan them. Building the
+  # frontend image also runs the production build.
   images:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -122,7 +135,7 @@ jobs:
   # requires this single check, so adding a scanner later needs no rule change.
   all-checks:
     if: always()
-    needs: [gitleaks, terraform, tflint, checkov, semgrep, trivy, backend, images]
+    needs: [gitleaks, terraform, tflint, checkov, semgrep, trivy, backend, frontend, images]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
