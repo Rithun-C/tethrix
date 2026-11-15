@@ -1,7 +1,7 @@
 # Dependabot opens a pull request when a pinned dependency has a newer version.
 # Its pull requests pass through the same CI checks as ours.
 #
-# Only GitHub Actions for now. Docker, pip and npm are added in bolt B2, when the
+# Only GitHub Actions for now. Docker, uv and npm are added in bolt B2, when the
 # Dockerfiles and lockfiles exist (Dependabot reports an error for a folder with
 # nothing to update).
 

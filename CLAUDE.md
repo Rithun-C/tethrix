@@ -15,7 +15,7 @@ A personal Notion-style productivity app: todos, habit tracker, journal, rich-te
 and a dashboard.
 
 - Frontend: React (Vite + TypeScript)
-- Backend: FastAPI (Python)
+- Backend: FastAPI (Python), packages managed with uv
 - MVP order: Todos -> Habits -> Journal -> Pages -> Dashboard + data export
 - In scope if time allows: attachments, reminders
 - Out of scope: search, sharing
@@ -137,6 +137,7 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | 2026-11-15 | Credit reserve 50 USD (labs stop below it), lab budget 40 USD in total (I-11) |
 | 2026-11-15 | Scanners run as Docker images pinned by digest in `tools/versions.env`; CI runs the same `make` targets (B1) |
 | 2026-11-15 | The app's Terraform stack is `infra/app/`. Licence: MIT (B1) |
+| 2026-11-15 | Backend Python packages are managed with uv (`pyproject.toml` + `uv.lock`), not pip. pip-audit stays as the scanner |
 
 ## Open decisions
 
