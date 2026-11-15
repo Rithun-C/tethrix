@@ -217,6 +217,9 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 - 2026-11-15: B1 design approved (Docker-pinned scanners, `infra/envs/lab/` renamed to
   `infra/app/`, MIT licence). All B1 files written; every check passes (`make gitleaks` needs the git repo, so the
   secret scan was run on staged files in a scratch copy; build notes in
-  `docs/bolts/B1-foundation.md` section 8; accepted finding F-013). No git repo yet.
-  Waiting for: owner review, first commit, GitHub repo and settings
-  (`docs/runbooks/repo-and-ci.md`), test pull request, journal.
+  `docs/bolts/B1-foundation.md` section 8; accepted finding F-013).
+- 2026-11-15: B1 done and approved. Public GitHub repo created and pushed, first CI run
+  green, security features on, ruleset on `main` (pull request + `all-checks`), hooks
+  installed, gates proven with a refused direct push and a blocked test pull request.
+  From now on every change goes through a branch and a pull request. Next: bolt B2
+  (local dev with Docker Compose), design not yet proposed.
