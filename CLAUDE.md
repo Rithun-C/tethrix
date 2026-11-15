@@ -250,5 +250,9 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 - 2026-11-16: Pull request 3 merged. The owner did the kind lab (kind v0.33.0): every
   step behaved as described, cluster deleted. B2-07 done. Still open before B2 closes:
   owner's review of the theory note (B2-08), journal entry, and the owner's approval.
+- 2026-11-16: B2 done and approved by the owner. Carried over as owner tasks, to finish
+  before B3 starts: read `docs/theory/containers-and-eks.md`, redo the lab answers
+  (section 6 of `infra/labs/kind/README.md`), write the B1 and B2 journal entries.
+  Next: bolt B3, starting with a design proposal. Not started.
 - Local note: this laptop's network needs `BUILD_NETWORK := host` in `local.mk` (git
   ignored) for image builds; see `docs/runbooks/local-dev.md`, "Problems".
