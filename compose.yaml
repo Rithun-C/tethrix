@@ -1,0 +1,84 @@
+# The whole app on the laptop: `make up` starts it, `make down` stops it.
+#
+# Local development only. Nothing here is used in AWS.
+#
+# Safety notes:
+# - Every port is bound to 127.0.0.1, so only this laptop can reach it. Without that,
+#   Docker opens the port to the whole network, and DynamoDB Local has no password.
+# - There are no secrets in this file. The AWS "credentials" below are the word
+#   "local": the AWS SDK refuses to run without some value, and DynamoDB Local ignores
+#   it. The real ~/.aws folder is never mounted into a container.
+
+name: productivity-app
+
+# Settings shared by the containers that run our backend image.
+x-backend-env: &backend-env
+  LOG_LEVEL: INFO
+  DYNAMODB_TABLE: productivity-app-data
+  DYNAMODB_ENDPOINT_URL: http://dynamodb:8000
+  AWS_ACCESS_KEY_ID: local
+  AWS_SECRET_ACCESS_KEY: local
+  AWS_DEFAULT_REGION: us-east-1
+  # Tool caches go to /tmp, the only writable place.
+  RUFF_CACHE_DIR: /tmp/ruff
+  MYPY_CACHE_DIR: /tmp/mypy
+  UV_CACHE_DIR: /tmp/uv
+
+# Hardening shared by every container.
+# - read_only: the container cannot change its own files. Lambda is the same: only /tmp
+#   is writable. A write problem shows up here, not after a deploy.
+# - cap_drop ALL: removes the special Linux rights a container gets by default.
+# - no-new-privileges: a process cannot gain more rights than it started with.
+x-hardening: &hardening
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:3.3.2@sha256:6ada631ec7aa5fc83446855eb17233e3dad184fec47477e8140c6c569cfe0c86
+    <<: *hardening
+    # DynamoDB Local unpacks a program library into /tmp and loads it from there, so its
+    # /tmp must allow running code ("exec"). Docker's default for a tmpfs is "noexec".
+    tmpfs:
+      - /tmp:exec
+    # -inMemory: data lives in memory and is gone when the container stops.
+    # -sharedDb: one database whatever "credentials" and region the caller uses.
+    command: ["-jar", "DynamoDBLocal.jar", "-inMemory", "-sharedDb"]
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  # Runs once at start: creates the table (I-08) and the seed data, then exits.
+  db-init:
+    build: &backend-build
+      context: app/backend
+      target: dev
+    image: productivity-app-backend:dev
+    <<: *hardening
+    environment: *backend-env
+    volumes: &backend-volumes
+      # Read-only mounts: the container reads our code but cannot change it.
+      - ./app/backend/src:/app/src:ro
+      - ./app/backend/scripts:/app/scripts:ro
+      - ./app/backend/tests:/app/tests:ro
+      - ./app/backend/pyproject.toml:/app/pyproject.toml:ro
+      - ./app/backend/uv.lock:/app/uv.lock:ro
+    command: ["sh", "-c", "python scripts/local_table.py && python scripts/seed.py"]
+    depends_on:
+      - dynamodb
+
+  backend:
+    build: *backend-build
+    image: productivity-app-backend:dev
+    <<: *hardening
+    environment: *backend-env
+    volumes: *backend-volumes
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      db-init:
+        condition: service_completed_successfully

@@ -149,14 +149,18 @@ the app down.
 | T-026 | Admin user | Admin login stolen | High | MFA, no access keys, `aws login` temporary credentials (ADR-0005) | Prowler | G-04 | Done |
 | T-027 | Sessions | A signed-out user's access token still works | Low | Lifetime 60 minutes; account deletion is enforced by the profile check | Unit test | B4 | Accepted (max 60 minutes) |
 | T-028 | CI/CD | A pull request from a fork runs malicious code in our CI | Medium | `pull_request` trigger only (never `pull_request_target`); read-only token; no secrets in CI; approval required before an outside contributor's workflow runs; actions pinned by SHA | Workflow review; GitHub settings (runbook `repo-and-ci.md`) | B1 | Done |
+| T-029 | Local dev | Local dev services reachable from the network; DynamoDB Local has no sign-in | Low | Every Compose port bound to `127.0.0.1`; seed data is made up; real data never local | Review of `compose.yaml` | B2 | Done |
+| T-030 | Images | A secret or private file is baked into an image layer | Medium | Allow-list `.dockerignore`; no secrets as build arguments; Trivy secret scan of the built image in CI | CI gate (`make image-scan`) | B2 | Done |
+| T-031 | Containers | A compromised container has more power than the app needs | Low | Non-root user, read-only file system, all capabilities dropped, `no-new-privileges`, final image without build tools | hadolint, checkov; review | B2 | Done |
 
 ## 5. Summary
 
 | | High | Medium | Low | Total |
 |---|---|---|---|---|
-| Threats | 11 | 12 | 5 | 28 |
+| Threats | 11 | 13 | 7 | 31 |
 | Already done (Week 0) | | | | 4 |
 | Done in B1 (T-008 in part, T-016, T-028) | | | | 3 |
+| Done in B2 (T-029, T-030, T-031) | | | | 3 |
 | Accepted with reason | | | | 2 |
 
 The High risks that need the most care: IDOR (T-013), stored XSS (T-006), journal text in
@@ -169,3 +173,4 @@ logs (T-014), JWT checks (T-001), supply chain (T-008) and the CI deploy role (T
 | 2026-11-15 | Inception | v1: 27 threats from the I-10 diagrams |
 | 2026-11-15 | B1 | T-028 added (fork pull request runs code in CI). T-008 and T-016 controls written; they move to Done when B1 closes |
 | 2026-11-15 | B1 closed | T-016 and T-028 Done, verified on GitHub (ruleset, push protection, fork approval, failing pull request blocked). T-008 done for what exists; package audits follow in B2 |
+| 2026-11-15 | B2, pull request 1 | T-029, T-030 and T-031 added and mitigated (local ports, secrets in images, container rights). T-008: pip-audit now runs in CI; npm audit follows with the frontend |

@@ -1,6 +1,6 @@
 # Bolt B2: Local development
 
-- Status: Design proposed, waiting for approval
+- Status: Design approved 2026-11-15, with Python 3.12 and Node 26 (decision 1). Pull request 1 (backend) written
 - Date: 2026-11-15
 - Tasks: B2-01 to B2-08
 - AWS cost: none. Nothing in this bolt touches AWS.
@@ -237,7 +237,7 @@ code in this bolt.
 
 | # | Decision | Options | Recommendation |
 |---|---|---|---|
-| 1 | Language versions | Python 3.14 or 3.13; Node 24 or 26 | Python 3.14 and Node 24: both mature and supported past the end of the project. Exact patch versions and digests are pinned at build time |
+| 1 | Language versions | Python 3.14 or 3.13; Node 24 or 26 | Recommended: Python 3.14 and Node 24. **Owner's decision: Python 3.12 and the latest Node LTS, which is Node 26.** Python 3.12 gets security fixes until October 2028, well past the end of the project |
 | 2 | Where tests and linters run | (a) Inside the dev containers, on the laptop and in CI. (b) Directly on the laptop and CI runner, with uv and Node installed in both | (a). Same versions everywhere, nothing new to install, and no new third-party actions in CI. The price is a slower CI run (the image is built first), likely 2 to 4 minutes |
 | 3 | A frontend `static` image, though AWS never runs it | Yes or no | Yes. It is about ten lines, makes the Kubernetes lab realistic, and lets us test the real production build locally |
 | 4 | FastAPI `/docs` page | Off everywhere, or on only locally | Off everywhere. An "only locally" switch is the same kind of risk as a local auth bypass |
@@ -264,3 +264,60 @@ code in this bolt.
 - The images run as non-root and pass the Trivy image scan.
 - The kind lab is done and the cluster is deleted.
 - The Definition of Done list in `CLAUDE.md` is complete.
+
+## 9. Build notes: pull request 1, backend (2026-11-15)
+
+### Files written
+
+| Task | Files |
+|---|---|
+| B2-01 | `app/backend/pyproject.toml`, `uv.lock`, `src/api/` (8 files), `tests/` (7 files) |
+| B2-03 | `app/backend/Dockerfile`, `.dockerignore` |
+| B2-04 | `compose.yaml`, new `make` targets, `docs/runbooks/local-dev.md` |
+| B2-05 | `app/backend/scripts/local_table.py`, `seed.py`, `tests/test_user_isolation.py` |
+| B2-06 | `tools/versions.env` (hadolint), `.trivyignore.yaml`, CI jobs `backend` and `images`, `.github/dependabot.yml` |
+
+### Pinned versions
+
+Python image `3.12.16-slim-trixie`, uv `0.13.7`, DynamoDB Local `3.3.2`, hadolint
+`2.15.1`, all by digest. Packages: fastapi 0.162.2, uvicorn 0.54.0, pydantic-settings
+2.16.2, boto3 1.43.126; development: pytest 9.2.0, httpx2 2.16.0, ruff 0.17.4, mypy
+2.4.1, boto3-stubs 1.43.126, pip-audit 2.10.1, watchfiles 1.3.0. 69 packages locked in
+total. Each direct package was checked on PyPI: real name, source repository, at least
+a week old (SR-81).
+
+### Results
+
+| Check | Result |
+|---|---|
+| `make lint-backend` | ruff and mypy (strict) clean |
+| `make test-backend` | 22 passed, 5 of them against DynamoDB Local |
+| `make audit-backend` | No known vulnerabilities in 69 packages |
+| `make hadolint` | Clean |
+| `make image-scan` | 2 High in the base image, accepted with an end date (F-015); no secrets |
+| `make check` (everything, including the B1 scanners) | Pass |
+| `make up`, then `curl` | 200 on health with a request ID; unknown path gives the error format; log lines are JSON with the path template |
+| The `runtime` image, run read-only with all capabilities dropped | Answers health; runs as uid 10001; contains no uv, pytest or ruff; 268 MB |
+
+### What differs from the design
+
+| Design | Built | Why |
+|---|---|---|
+| Routes grouped with FastAPI's `include_router` | Each routes module adds its routes straight onto the app | In the current FastAPI, included routers are hidden behind private internals: `app.routes` no longer lists them and the log middleware saw `/health` instead of `/api/v1/health`. Plain routes keep both simple |
+| httpx for tests | httpx2 | The current Starlette test client needs httpx2 (same author, published under the pydantic organisation). Checked before adding |
+| DynamoDB Local data in a named volume | In memory; seed data is reloaded on every start | The image runs as a non-root user that cannot write to a fresh volume. In-memory needs no special rights, and real data never lives locally anyway. Can be revisited when features exist (B5) |
+| All containers with a plain read-only `/tmp` | DynamoDB Local's `/tmp` allows running code | It loads a library from `/tmp`; without this it answers 500 |
+| `docker compose build` | `docker build` through `make build`, with a selectable network | This network's IPv4 route to PyPI stalls and Docker's default network has no IPv6. `BUILD_NETWORK := host` in `local.mk` fixes it; Compose's own build ignored that setting |
+| A fixed `exclude-newer` date | `exclude-newer = "7 days"` | Semgrep flagged the fixed date (F-016): a rolling cooldown cannot go stale |
+| Not in the design | Start-up guard: `DYNAMODB_ENDPOINT_URL` is refused when running in Lambda | A deployed function must never be pointed at another "DynamoDB" address |
+| Not in the design | The uv download cache is kept between builds (`--mount=type=cache`) | An interrupted build continues instead of starting over |
+| Not in the design | Scripts refuse to run unless `DYNAMODB_ENDPOINT_URL` is set | The table and seed scripts can never touch real AWS by accident |
+
+### Lessons from this pull request
+
+- Check the installed version's behaviour, not memory: three tests failed because
+  FastAPI and Starlette had changed (`include_router`, the test client).
+- A test client can leak too: httpx2 logged the full URL with its query string. HTTP
+  client loggers are now kept at warning level (SR-42).
+- A build that "hangs" is usually waiting on the network. The Builds tab in Docker
+  Desktop shows it; a direct download test over IPv4 and IPv6 found the cause.

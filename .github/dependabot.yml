@@ -1,9 +1,10 @@
 # Dependabot opens a pull request when a pinned dependency has a newer version.
 # Its pull requests pass through the same CI checks as ours.
 #
-# Only GitHub Actions for now. Docker, uv and npm are added in bolt B2, when the
-# Dockerfiles and lockfiles exist (Dependabot reports an error for a folder with
-# nothing to update).
+# npm is added with the frontend (B2, pull request 2).
+#
+# cooldown: wait a week after a release before proposing it. Most malicious releases
+# are found and removed within days.
 
 version: 2
 updates:
@@ -11,7 +12,29 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    # Wait a week after a release before proposing it. Most malicious releases are
-    # found and removed within days.
+    cooldown:
+      default-days: 7
+
+  # Base images in the backend Dockerfile (Python, uv).
+  - package-ecosystem: docker
+    directory: /app/backend
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
+  # Images in compose.yaml (DynamoDB Local).
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
+  # Python packages in pyproject.toml and uv.lock.
+  - package-ecosystem: uv
+    directory: /app/backend
+    schedule:
+      interval: weekly
     cooldown:
       default-days: 7

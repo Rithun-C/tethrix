@@ -47,7 +47,8 @@ Write the answers in the bolt's journal entry.
 7. Is the licence acceptable? MIT, BSD, Apache-2.0 and ISC are fine. Ask before using
    GPL or AGPL code, or code with no licence.
 8. Is the newest version at least a week old? Most malicious releases are found and
-   removed within days.
+   removed within days. For Python this is enforced: `exclude-newer = "7 days"` in
+   `app/backend/pyproject.toml` makes uv ignore anything newer when it writes the lockfile.
 
 This applies to Claude's suggestions too. An AI model can suggest a package name that
 does not exist, and attackers register such names. Every suggested package is checked

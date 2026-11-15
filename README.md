@@ -3,7 +3,7 @@
 A personal productivity app (todos, habits, journal, pages, dashboard) built to learn AWS,
 cloud security, Terraform and containers. It runs entirely inside the AWS Free plan.
 
-Nothing is deployed yet.
+Nothing is deployed yet. The backend runs locally: see `docs/runbooks/local-dev.md`.
 
 ## Where things are
 
@@ -20,7 +20,8 @@ Nothing is deployed yet.
 | `docs/theory/` | Notes on topics that cannot be practised on the Free plan |
 | `docs/journal/` | One short learning entry per session |
 | `app/frontend/` | React app (Vite + TypeScript) |
-| `app/backend/` | FastAPI app |
+| `app/backend/` | FastAPI app (Python 3.12, packages managed with uv) |
+| `compose.yaml` | Runs the app on the laptop: `make up` |
 | `infra/bootstrap/` | Terraform for state bucket, budgets and account guardrails |
 | `infra/modules/` | Reusable Terraform modules |
 | `infra/app/` | The app's Terraform stack |

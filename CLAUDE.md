@@ -138,6 +138,8 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | 2026-11-15 | Scanners run as Docker images pinned by digest in `tools/versions.env`; CI runs the same `make` targets (B1) |
 | 2026-11-15 | The app's Terraform stack is `infra/app/`. Licence: MIT (B1) |
 | 2026-11-15 | Backend Python packages are managed with uv (`pyproject.toml` + `uv.lock`), not pip. pip-audit stays as the scanner |
+| 2026-11-15 | Python 3.12 for the backend; Node 26 (latest LTS) for the frontend (B2) |
+| 2026-11-15 | App tests and linters run inside the dev containers, on the laptop and in CI. FastAPI `/docs` is off everywhere. Logging uses Python's own `logging` (B2) |
 
 ## Open decisions
 
@@ -223,5 +225,13 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   green, security features on, ruleset on `main` (pull request + `all-checks`), hooks
   installed, gates proven with a refused direct push and a blocked test pull request.
   From now on every change goes through a branch and a pull request.
-- 2026-11-15: Bolt B2 (local dev) design proposed in `docs/bolts/B2-local-dev.md`, waiting
-  for approval. Seven decisions are listed in its section 6.
+- 2026-11-15: Bolt B2 (local dev) design approved (`docs/bolts/B2-local-dev.md`), with
+  Python 3.12 and Node 26 instead of the recommended versions. Work is split into three
+  pull requests: (1) backend, database, Compose; (2) frontend; (3) kind lab and theory.
+- 2026-11-15: B2 pull request 1 written on branch `b2/backend`: FastAPI skeleton, backend
+  Dockerfile, `compose.yaml`, local table and seed data, pip-audit, hadolint and image
+  scan in CI. `make check` passes; `make up` answers on localhost:8080. Accepted finding
+  F-015 (zlib in the base image, until 2026-12-15). Build notes in
+  `docs/bolts/B2-local-dev.md` section 9. Waiting for owner review and merge.
+- Local note: this laptop's network needs `BUILD_NETWORK := host` in `local.mk` (git
+  ignored) for image builds; see `docs/runbooks/local-dev.md`, "Problems".
