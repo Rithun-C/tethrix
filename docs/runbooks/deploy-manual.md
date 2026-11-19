@@ -5,13 +5,19 @@
 
 ## Purpose
 
-Put the app on AWS at `https://tethrix.satrix.in` by hand, and prove that it works and
-that every way around CloudFront is closed. B6 automates the same steps in GitHub
+Put the app on AWS by hand, and prove that it works and that every way around
+CloudFront is closed.
+
+The app's address: for now the distribution's own `https://<id>.cloudfront.net`
+address, because the parent domain `satrix.in` is on hold at the registrar
+(`use_custom_domain = false`, 2026-11-20). Once the hold is lifted, follow "Adding the
+domain later" below and the address becomes `https://tethrix.satrix.in`. B6 automates the same steps in GitHub
 Actions; doing them by hand once first makes the pipeline easy to follow.
 
 ## When to use it
 
-- The first deploy: every step, in order.
+- The first deploy: every step, in order. While `use_custom_domain` is false, steps 2
+  and 3 are shorter (see each step).
 - Later deploys by hand: steps 4, 5, 6 and 7 only.
 
 ## What gets built
@@ -28,8 +34,8 @@ flowchart LR
 
 ## Cost
 
-About 0.55 USD a month (B3 design, section 7): 0.50 USD for the hosted zone, a few cents
-for ECR. Nothing is hourly, so nothing is destroyed at the end of the session; this is
+A few cents a month for ECR while the app runs on the default address. About 0.55 USD a
+month once the domain is added (0.50 USD for the hosted zone; B3 design, section 7). Nothing is hourly, so nothing is destroyed at the end of the session; this is
 the always-on app.
 
 ## Prerequisites
@@ -40,7 +46,7 @@ the always-on app.
 - Docker Desktop is running.
 - Free plan check done and written in section 8 below: CloudFront Functions, Route 53
   and ACM (Lambda, DynamoDB, S3, CloudFront and ECR were checked in I-11).
-- Access to the DNS settings of `satrix.in` at its DNS provider (needed in step 3).
+- Only with the domain: access to the DNS settings of `satrix.in` at GoDaddy (step 3).
 - Concurrency limit: 10 (checked 2026-11-20). With 10, no reservation is possible, so
   `lambda_reserved_concurrency` stays -1 and the account limit is the cap (SR-72).
 
@@ -57,7 +63,18 @@ terraform -chdir=infra/app init -backend-config=backend.hcl
 Why: the app stack keeps its state in the bucket from `infra/bootstrap`, under its own
 key `app/terraform.tfstate`.
 
-### Step 2: create only the ECR repository and the DNS zone (first time only)
+### Step 2: create only the ECR repository (and the DNS zone, with the domain)
+
+While `use_custom_domain` is false (now):
+
+```sh
+terraform -chdir=infra/app plan -target=module.ecr -out=tfplan
+terraform -chdir=infra/app apply tfplan
+```
+
+Expected: the plan creates 2 resources (repository, lifecycle rule).
+
+With the domain, the zone is created in the same step:
 
 ```sh
 terraform -chdir=infra/app plan -target=module.ecr -target=aws_route53_zone.app -out=tfplan
@@ -65,7 +82,7 @@ terraform -chdir=infra/app apply tfplan
 terraform -chdir=infra/app output name_servers
 ```
 
-Expected: the plan creates 3 resources (repository, lifecycle rule, hosted zone).
+Expected: 3 resources (repository, lifecycle rule, hosted zone).
 Terraform warns that `-target` is not for routine use. That is right; this is the one
 exception.
 
@@ -73,7 +90,9 @@ Why two applies: Lambda cannot be created before its image exists in ECR, and th
 certificate cannot be validated before the parent domain points at our zone. This step
 creates exactly the two things the others wait for.
 
-### Step 3: hand the subdomain to Route 53 (first time only)
+### Step 3: hand the subdomain to Route 53 (first time only, only with the domain)
+
+Skip this step while `use_custom_domain` is false.
 
 At the DNS provider of `satrix.in`, add four records:
 
@@ -124,13 +143,21 @@ terraform -chdir=infra/app plan -out=tfplan
 terraform -chdir=infra/app apply tfplan
 ```
 
-Read the plan before applying. Expected for the first deploy: around 30 resources to
-add, 0 to change, 0 to destroy. Things to look for: the Lambda image ends with your
-commit ID; the function URL has `authorization_type = "AWS_IAM"`; the distribution has
-`minimum_protocol_version = "TLSv1.2_2021"`.
+Read the plan before applying. Expected for the first deploy: about 20 resources to
+add without the domain (about 28 with it), 0 to change, 0 to destroy. Things to look
+for: the Lambda image ends with your commit ID; the function URL has
+`authorization_type = "AWS_IAM"`; without the domain the distribution has
+`cloudfront_default_certificate = true`, with it `minimum_protocol_version =
+"TLSv1.2_2021"`.
 
-The apply takes 5 to 15 minutes: the certificate waits for DNS validation, and
-CloudFront copies the distribution to its edge locations.
+The apply takes 5 to 15 minutes, mostly CloudFront copying the distribution to its
+edge locations (with the domain, the certificate also waits for DNS validation).
+
+The address of the app:
+
+```sh
+terraform -chdir=infra/app output -raw app_url
+```
 
 ### Step 6: publish the React files
 
@@ -147,14 +174,15 @@ minute or two).
 make smoke
 ```
 
-Expected: every line `PASS`, and `Failed: 0`. The tests are in `scripts/smoke.sh`; each
+Expected: every line `PASS`, and `Failed: 0`. On the default address the TLS 1.1 check
+prints `SKIP` (F-022): AWS fixes the minimum at TLS 1.0 for its own certificate. The tests are in `scripts/smoke.sh`; each
 line says what it checks. They include the negative tests of B3-07: the function URL and
 the bucket answer 403 when called directly, plain HTTP is redirected, TLS 1.1 is
 refused, a POST without the body hash is refused, and a 17 KB body gets 413.
 
 Then by hand:
 
-1. Open https://tethrix.satrix.in. Expected: the dashboard with "API: ok".
+1. Open the address from `app_url`. Expected: the dashboard with "API: ok".
 2. Open the browser's developer tools, Console tab. Expected: no CSP errors.
 3. Look at the API's log lines:
 
@@ -209,12 +237,29 @@ the account ID.
 | The page loads but the API status says "unreachable" | Look at the browser console for a CSP error, and at the Network tab for the status of `/api/v1/health` |
 | The old page still shows after `make publish-frontend` | Wait for the invalidation, then reload without the cache (Shift + reload) |
 
+## Adding the domain later
+
+When `dig +short NS satrix.in` shows the two `domaincontrol.com` names again (the hold
+is lifted):
+
+1. Claude changes the default of `use_custom_domain` to `true` in a pull request; you
+   merge it, so `main` keeps matching what runs.
+2. Create the zone first:
+   `terraform -chdir=infra/app plan -target=aws_route53_zone.app -out=tfplan`, apply,
+   then `terraform -chdir=infra/app output name_servers`.
+3. Step 3 above: the four NS records at GoDaddy, and wait for `dig`.
+4. `terraform -chdir=infra/app plan -out=tfplan` and apply: certificate, records, and
+   the distribution gets the domain and TLS 1.2 minimum. The `*.cloudfront.net` address
+   keeps working.
+5. `make smoke`: the TLS 1.1 check now runs and must pass.
+
 ## Undo
 
 Not part of a normal session: the app is always on. To take everything down
 (`terraform destroy`), the order matters because of subdomain takeover (T-032):
 
-1. Remove the four NS records for `tethrix` at the provider of `satrix.in` first.
+1. With the domain: remove the four NS records for `tethrix` at the provider of
+   `satrix.in` first.
 2. Then `terraform -chdir=infra/app apply -var final_destroy=true` (turns off deletion
    protection), then `terraform -chdir=infra/app destroy`.
 

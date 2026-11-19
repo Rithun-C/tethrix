@@ -144,6 +144,7 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | 2026-11-20 | The app's domain is `tethrix.satrix.in`, a subdomain of the owner's domain (ADR-0006). Only the subdomain is used by this project |
 | 2026-11-20 | DNS: a Route 53 hosted zone for `tethrix.satrix.in` only, delegated with NS records at the parent's DNS provider (ADR-0006 Accepted) |
 | 2026-11-20 | Lambda concurrency: account limit is 10, so no reservation is possible; the account limit is the cap (SR-72) |
+| 2026-11-20 | `satrix.in` is on hold at GoDaddy (identity check failing). B3 deploys on the default `*.cloudfront.net` address first; Terraform switch `use_custom_domain` stays false until the hold is lifted (ADR-0006 update, F-022) |
 
 ## Open decisions
 
@@ -152,6 +153,7 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | Editor library: TipTap vs BlockNote | ADR in bolt B8 |
 | Journal encryption: SSE vs KMS key vs client-side | ADR in bolt B8 |
 | App name | Any time |
+| Switch on `tethrix.satrix.in` (`use_custom_domain = true`) | When GoDaddy lifts the hold on `satrix.in` |
 
 ## Current status
 
@@ -271,5 +273,9 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   `make push-backend`, `make publish-frontend`, `make smoke`, runbook
   `docs/runbooks/deploy-manual.md`. Static checks only: nothing applied. Next: owner
   merges PR 1 and PR 2, does the Free plan check, then deploys with the runbook.
+- 2026-11-20: PR 1 (#11) and PR 2 (#12) merged. Dependabot #7 closed by itself.
+- 2026-11-20: `satrix.in` found on `clientHold` at GoDaddy (public registration record);
+  DigiLocker identity check failing. Owner chose the fallback: deploy on the default
+  `*.cloudfront.net` address first. Change written on branch `b3/default-domain`.
 - Local note: this laptop's network needs `BUILD_NETWORK := host` in `local.mk` (git
   ignored) for image builds; see `docs/runbooks/local-dev.md`, "Problems".

@@ -1,5 +1,6 @@
-# The front door (B3-04 to B3-06, ADR-0002, ADR-0006). One distribution at
-# https://tethrix.satrix.in with two behaviours:
+# The front door (B3-04 to B3-06, ADR-0002, ADR-0006). One distribution, at
+# https://tethrix.satrix.in when var.use_custom_domain is true, otherwise at its own
+# *.cloudfront.net address. Two behaviours:
 #   /api/*      -> Lambda function URL, signed with OAC, never cached
 #   everything  -> S3 bucket with the React build, signed with OAC, cached
 
@@ -112,18 +113,20 @@ locals {
 
 # Trivy asks for WAF (AWS-0011): same reason as checkov CKV_AWS_68 below.
 #trivy:ignore:AVD-AWS-0011
-resource "aws_cloudfront_distribution" "app" {
+resource "aws_cloudfront_distribution" "app" { # nosemgrep: terraform.aws.security.aws-cloudfront-insecure-tls.aws-insecure-cloudfront-distribution-tls-version
   #checkov:skip=CKV_AWS_68:WAF is billed monthly per web ACL and rule; practised in the B11-01 lab only.
   #checkov:skip=CKV2_AWS_47:Same as CKV_AWS_68 (WAF rule for Log4j); no Java in this app.
   #checkov:skip=CKV_AWS_86:Access logs off (B3 decision 3): S3 logs need ACLs, which our bucket defaults forbid; Lambda logs every API call.
   #checkov:skip=CKV_AWS_310:Origin failover needs a second origin in another place; one region by design.
   #checkov:skip=CKV_AWS_374:No geo restriction: the owner may use the app while travelling.
+  #checkov:skip=CKV_AWS_174:Only while use_custom_domain is false: the default CloudFront certificate is fixed at TLSv1 by AWS. With the domain, TLSv1.2_2021 is set (F-022).
+  #checkov:skip=CKV2_AWS_42:Same as CKV_AWS_174: a custom certificate comes with the domain (ADR-0006, F-022).
   comment             = "${var.project} (ADR-0002)"
   enabled             = true
   is_ipv6_enabled     = true
   http_version        = "http2and3"
   default_root_object = "index.html"
-  aliases             = [var.domain_name]
+  aliases             = var.use_custom_domain ? [var.domain_name] : []
 
   # Edge locations in North America and Europe only: the cheapest price class.
   price_class = "PriceClass_100"
@@ -182,12 +185,15 @@ resource "aws_cloudfront_distribution" "app" {
     }
   }
 
-  # Our own certificate, so TLS 1.2 can be the minimum (SR-50, ADR-0006). SNI: the
-  # certificate is chosen by name; a dedicated IP would cost 600 USD a month.
+  # With the domain: our own certificate, so TLS 1.2 can be the minimum (SR-50,
+  # ADR-0006). SNI: the certificate is chosen by name; a dedicated IP would cost 600 USD
+  # a month. Without it: CloudFront's own certificate, where AWS fixes the minimum at
+  # TLSv1 and no other value is accepted (F-022).
   viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate_validation.app.certificate_arn
-    ssl_support_method       = "sni-only"
-    minimum_protocol_version = "TLSv1.2_2021"
+    cloudfront_default_certificate = !var.use_custom_domain
+    acm_certificate_arn            = one(aws_acm_certificate_validation.app[*].certificate_arn)
+    ssl_support_method             = var.use_custom_domain ? "sni-only" : null
+    minimum_protocol_version       = var.use_custom_domain ? "TLSv1.2_2021" : "TLSv1"
   }
 }
 

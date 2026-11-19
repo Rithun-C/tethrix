@@ -2,13 +2,13 @@
 # the bucket name): never paste them into docs, issues or pull requests.
 
 output "app_url" {
-  description = "The app's address."
-  value       = "https://${var.domain_name}"
+  description = "The app's address: the custom domain, or the *.cloudfront.net address while use_custom_domain is false."
+  value       = var.use_custom_domain ? "https://${var.domain_name}" : "https://${aws_cloudfront_distribution.app.domain_name}"
 }
 
 output "name_servers" {
-  description = "Add these as NS records for the subdomain at the parent domain's DNS provider (runbook step 3)."
-  value       = aws_route53_zone.app.name_servers
+  description = "Add these as NS records for the subdomain at the parent domain's DNS provider. Null while use_custom_domain is false."
+  value       = one(aws_route53_zone.app[*].name_servers)
 }
 
 output "ecr_repository_url" {
@@ -27,7 +27,7 @@ output "distribution_id" {
 }
 
 output "cloudfront_domain" {
-  description = "The distribution's own *.cloudfront.net name, for the negative tests. Not written into the repo."
+  description = "The distribution's own *.cloudfront.net name. Not written into the repo."
   value       = aws_cloudfront_distribution.app.domain_name
 }
 
