@@ -416,3 +416,26 @@ multi-platform index. Checked on GitHub: the project now lives at
 - That the `invoked_via_function_url` permission is what AWS expects for OAC.
 
 The runbook's "Problems" table covers each of these.
+
+## 12. Change: deploy on the default address first (2026-11-20)
+
+The registrar put `satrix.in` on `clientHold` (found with the public registration record:
+status `client hold`, last changed 2026-11-19), and its identity check through DigiLocker
+keeps failing. A domain on hold does not exist in DNS, so runbook step 3 cannot work.
+
+Owner's decision: deploy on the default `*.cloudfront.net` address now, add the domain
+when the hold is lifted.
+
+| What | Change |
+|---|---|
+| `infra/app/variables.tf` | New switch `use_custom_domain`, default `false` |
+| `infra/app/dns.tf` | Zone, CAA, certificate, validation and alias records exist only when the switch is on |
+| `infra/app/cloudfront.tf` | No alias and CloudFront's own certificate while off; the domain, our certificate and TLS 1.2 minimum when on |
+| `infra/app/outputs.tf` | `app_url` is the `*.cloudfront.net` address while off; `name_servers` is null |
+| `scripts/smoke.sh` | The TLS 1.1 check prints SKIP on a `*.cloudfront.net` address |
+| Runbook | Shorter steps 2 and 3 for now; new section "Adding the domain later" |
+| Records | ADR-0006 update, T-036, F-022 |
+
+Checks: `terraform validate`, tflint, checkov, Trivy, Semgrep and shellcheck pass. Two
+checkov skips and one Semgrep exception were added for the default certificate, each
+pointing at F-022.

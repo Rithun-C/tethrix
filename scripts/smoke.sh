@@ -10,6 +10,7 @@
 # function URL and bucket name from the Terraform outputs.
 #
 # Usage: scripts/smoke.sh DOMAIN FUNCTION_URL BUCKET
+# DOMAIN is the host name only: tethrix.satrix.in, or the *.cloudfront.net address.
 
 set -uo pipefail
 
@@ -84,7 +85,11 @@ code=$(curl -s -o /dev/null -D "$tmp/http" --max-time 15 "http://${domain}/" -w 
 location=$(header location "$tmp/http")
 if [ "$code" = "301" ] && [ "${location#https://}" != "$location" ]; then ok "plain HTTP redirects to HTTPS"; else bad "plain HTTP: got $code, location '$location'"; fi
 
-if curl -s -o /dev/null --max-time 15 --tlsv1.1 --tls-max 1.1 "$base/" 2>/dev/null; then
+if [ "${domain%.cloudfront.net}" != "$domain" ]; then
+  # On the default address AWS fixes the minimum at TLS 1.0 (F-022); only our own domain
+  # and certificate can require TLS 1.2. Reported, not counted as a pass or a failure.
+  echo "SKIP  TLS 1.1 check: default *.cloudfront.net address (F-022, until the custom domain)"
+elif curl -s -o /dev/null --max-time 15 --tlsv1.1 --tls-max 1.1 "$base/" 2>/dev/null; then
   bad "TLS 1.1 was accepted (SR-50)"
 else
   ok "TLS 1.1 is refused (SR-50)"

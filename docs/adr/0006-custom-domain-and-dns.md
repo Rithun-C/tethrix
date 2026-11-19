@@ -1,6 +1,7 @@
 # ADR-0006: Custom domain and DNS
 
-- Status: Accepted 2026-11-20 (domain and Option A both confirmed by the owner)
+- Status: Accepted 2026-11-20 (domain and Option A both confirmed by the owner).
+  Switched on later: see "Update 2026-11-20" at the end
 - Date: 2026-11-20
 - Task: B3-04
 - Replaces the decision of 2026-11-11 "No custom domain; use the default CloudFront
@@ -99,6 +100,22 @@ certificate can be validated and the distribution created. The runbook gives eac
   allowed in the cost model.
 - ADR-0003: the Cognito callback and sign-out URLs are `https://tethrix.satrix.in/...`.
 - Route 53 and ACM are checked against the Free plan before the first apply.
+
+## Update 2026-11-20: switched on later
+
+The registrar (GoDaddy) put `satrix.in` on `clientHold` five days after it was bought,
+waiting for identity verification that keeps failing. While on hold the domain does not
+exist in DNS, so it cannot be delegated and no certificate can be validated.
+
+Owner's decision: deploy B3 on the default `*.cloudfront.net` address now and add the
+domain later. Terraform has a switch, `use_custom_domain`, default `false` until the hold
+is lifted. With `false` no zone, certificate or record is created (and no 0.50 USD a
+month is paid), and CloudFront uses its own certificate.
+
+What is lost until then: AWS fixes the minimum TLS version at 1.0 for the default
+certificate, so SR-50 is not fully met (F-022, T-036). Browsers use TLS 1.3 anyway.
+Nothing has to be rebuilt to switch: the same distribution gets the name and the
+certificate.
 
 ## What I learned
 
