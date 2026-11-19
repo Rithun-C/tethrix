@@ -53,7 +53,7 @@ and a dashboard.
 
 ## Architecture (proposed, confirmed through ADRs)
 
-- Frontend: React build on S3 + CloudFront (default CloudFront domain, no custom domain)
+- Frontend: React build on S3 + CloudFront at `tethrix.satrix.in` (ADR-0006)
 - Backend: FastAPI in a container on Lambda, using AWS Lambda Web Adapter
 - API: CloudFront `/api/*` -> Lambda Function URL locked with Origin Access Control (OAC)
   - OAC replaces the `Authorization` header, so the JWT travels in a custom header.
@@ -123,7 +123,7 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 |---|---|
 | 2026-11-11 | Region is us-east-1 |
 | 2026-11-11 | GitHub repo is public |
-| 2026-11-11 | No custom domain; use the default CloudFront domain |
+| 2026-11-11 | No custom domain; use the default CloudFront domain (replaced 2026-11-20) |
 | 2026-11-11 | Claude gets no AWS credentials; static checks only |
 | 2026-11-11 | At the end: export data, destroy everything, let the account close |
 | 2026-11-11 | The AWS Labs aidlc-workflows tool is not used; the phase/bolt process above is |
@@ -140,6 +140,8 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | 2026-11-15 | Backend Python packages are managed with uv (`pyproject.toml` + `uv.lock`), not pip. pip-audit stays as the scanner |
 | 2026-11-15 | Python 3.12 for the backend; Node 26 (latest LTS) for the frontend (B2) |
 | 2026-11-15 | App tests and linters run inside the dev containers, on the laptop and in CI. FastAPI `/docs` is off everywhere. Logging uses Python's own `logging` (B2) |
+| 2026-11-20 | B3 design approved with all recommendations: temporary `POST /api/v1/echo` until B5, CloudFront Function for React routes, CloudFront access logs off, DynamoDB PITR on, first apply with `-target`, ECR keeps 3 images, three pull requests |
+| 2026-11-20 | The app's domain is `tethrix.satrix.in`, a subdomain of the owner's domain (ADR-0006). Only the subdomain is used by this project |
 
 ## Open decisions
 
@@ -148,6 +150,7 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | Editor library: TipTap vs BlockNote | ADR in bolt B8 |
 | Journal encryption: SSE vs KMS key vs client-side | ADR in bolt B8 |
 | App name | Any time |
+| DNS for `tethrix.satrix.in`: Route 53 subdomain zone or records by hand | ADR-0006, before B3 pull request 2 |
 
 ## Current status
 
@@ -254,5 +257,9 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   before B3 starts: read `docs/theory/containers-and-eks.md`, redo the lab answers
   (section 6 of `infra/labs/kind/README.md`), write the B1 and B2 journal entries.
   Next: bolt B3, starting with a design proposal. Not started.
+- 2026-11-20: Owner allowed B3 to start while those B2 tasks are finished. B3 design
+  (`docs/bolts/B3-walking-skeleton.md`) approved with all recommendations and the
+  custom domain `tethrix.satrix.in` (ADR-0006, Proposed: DNS hosting to confirm).
+  Pull request 1 (app changes, no AWS) started on branch `b3/app`.
 - Local note: this laptop's network needs `BUILD_NETWORK := host` in `local.mk` (git
   ignored) for image builds; see `docs/runbooks/local-dev.md`, "Problems".

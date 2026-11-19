@@ -9,7 +9,11 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from starlette.routing import Route
 
-OPEN_ROUTES = {("GET", "/api/v1/health")}
+OPEN_ROUTES = {
+    ("GET", "/api/v1/health"),
+    # Temporary in B3, removed in B5. Answers only a byte count (routes/echo.py).
+    ("POST", "/api/v1/echo"),
+}
 
 
 def test_only_the_expected_routes_exist(app: FastAPI) -> None:

@@ -4,9 +4,10 @@ from fastapi import FastAPI
 
 from api.config import Settings, get_settings
 from api.errors import install_error_handlers
+from api.limits import BodyLimitMiddleware
 from api.logs import setup_logging
 from api.middleware import RequestLogMiddleware
-from api.routes import health
+from api.routes import echo, health
 
 API_PREFIX = "/api/v1"
 
@@ -28,6 +29,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     install_error_handlers(app)
+    # The last middleware added runs first. The request log wraps everything, so a
+    # request refused by the body limit still gets its log line.
+    app.add_middleware(BodyLimitMiddleware)
     app.add_middleware(RequestLogMiddleware)
 
     # Each routes module adds its routes straight onto the app, with the full path.
@@ -36,6 +40,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # internals. Plain routes keep `app.routes` a simple, complete list, which the
     # "every route needs a sign-in" test depends on.)
     health.add_routes(app, API_PREFIX)
+    echo.add_routes(app, API_PREFIX)  # temporary, removed in B5
     return app
 
 
