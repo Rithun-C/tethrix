@@ -244,3 +244,23 @@ they first come up. AWS service names are explained in the bolt where they are f
 | NetworkPolicy | Rules for which pods may connect to which pods. Without one, every pod can reach every pod. |
 | Pod Security Admission | A built-in Kubernetes check that refuses pods which do not meet a security level (ours: "restricted"). |
 | Port-forward | A temporary tunnel from a port on the laptop to a pod or Service. |
+| Distribution (CloudFront) | One CloudFront set-up: a domain name, its origins and its behaviours. |
+| Behaviour (CloudFront) | A rule "requests whose path matches X go to origin Y, with these settings". We have two: `/api/*` and everything else. |
+| Response headers policy | CloudFront settings that add headers such as CSP and HSTS to every response. |
+| CloudFront Function | A few lines of JavaScript CloudFront runs on each request before choosing an origin. Ours sends React routes like `/todos` to `index.html`. |
+| Invalidation | Telling CloudFront to forget cached copies, so newly published files are served. |
+| Reserved concurrency | A cap on how many copies of one Lambda function may run at the same time. |
+| Lambda extension | A program Lambda starts next to the function, from `/opt/extensions`. The Web Adapter is one. |
+| Readiness check | A request the Web Adapter makes after a cold start; traffic only flows once it succeeds. |
+| PITR (point-in-time recovery) | A continuous DynamoDB backup: the table can be restored to any second of the last 35 days. |
+| Request body limit | The largest body the API accepts. Bigger requests get 413 before any route runs (SR-31). |
+| DNS | The internet's phone book: turns a name like `tethrix.satrix.in` into a server address. |
+| DNS record | One entry in DNS. A CNAME says "this name is another name"; an NS record says which servers answer for a name. |
+| Route 53 | AWS's DNS service. |
+| Hosted zone | Route 53's container for the DNS records of one domain or subdomain. 0.50 USD a month. |
+| Delegation (DNS) | The parent domain hands one subdomain to other name servers with NS records, and keeps the rest. |
+| Alias record | A Route 53 record that points a name at an AWS resource such as CloudFront. |
+| ACM | AWS Certificate Manager: issues and renews the TLS certificate for our domain. Public certificates are free. |
+| DNS validation | ACM proves we control a name by asking for a special DNS record; it stays in place so renewals are automatic. |
+| Certificate Transparency | Public logs of every TLS certificate issued. A domain becomes public the moment its certificate exists. |
+| Subdomain takeover | Someone else serves content on our name because a DNS record still points at something we deleted. |

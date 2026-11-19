@@ -9,6 +9,9 @@ vulnerabilities:
   # is written on top of the plain compression functions), so our app cannot reach it.
   # Ends by itself: Dependabot proposes the rebuilt base image, we merge it, and this
   # entry is deleted.
+  # Since 2026-11-20 the same zlib CVE is also reported in the Alpine layer of the nginx
+  # image (F-020). nginx uses zlib only to compress responses with the stream functions,
+  # not the gz* file functions, so the same reasoning holds.
   - id: CVE-2026-85091
     statement: "F-015: fixed in Debian, waiting for a rebuilt python base image; not reachable from Python"
     expired_at: 2026-12-15
@@ -16,7 +19,8 @@ vulnerabilities:
     statement: "F-015: same zlib package and fix as CVE-2026-85091"
     expired_at: 2026-12-15
 
-  # F-017. musl (the C library) in the Alpine layer of the nginx-unprivileged base image,
+  # F-017. musl (the C library) in the Alpine layer of the nginx-unprivileged base image
+  # (still present in 1.31.7-alpine-slim),
   # used only by the frontend "static" image. That image is for the Kubernetes lab and
   # local checks; it never runs in AWS. The bug is in regcomp (compiling a regular
   # expression): nginx only compiles patterns from its own config file, never from a

@@ -11,6 +11,10 @@
 FROM ghcr.io/astral-sh/uv:0.13.7@sha256:96f40d3904aad8d0bd010539001d36c8e2188b981e1334471a90c4a1d93bb490 AS uv
 
 # Official Python image, slim variant: Debian with Python and little else.
+# Lambda Web Adapter (ADR-0004): turns Lambda events into HTTP requests for uvicorn.
+# Released by AWS (github.com/aws/aws-lambda-web-adapter) on 2026-09-18.
+FROM public.ecr.aws/awsguru/aws-lambda-adapter:1.1.0@sha256:17cfd08eff1dfea3f6a9a1e9c65fdac80aa4919b6085e746615530f43f57d2f1 AS lambda-adapter
+
 FROM python:3.12.16-slim-trixie@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b AS python-base
 
 # PYTHONDONTWRITEBYTECODE: no .pyc files; the file system is read-only when running.
@@ -78,7 +82,15 @@ FROM python-base AS runtime
 COPY --from=deps /opt/venv /opt/venv
 COPY src ./src
 
+# Lambda starts every program in /opt/extensions next to the function. Outside Lambda
+# (Docker, kind) nothing starts it, so the same image runs unchanged everywhere.
+COPY --from=lambda-adapter /lambda-adapter /opt/extensions/lambda-adapter
+# Before the first request after a cold start, the adapter waits until health answers
+# 200. Without this it would accept any answer below 500 from "/".
+ENV AWS_LWA_READINESS_CHECK_PATH=/api/v1/health \
+    AWS_LWA_READINESS_CHECK_HEALTHY_STATUS=200
+
 USER 10001:10001
-# 8080 is the port the Lambda Web Adapter expects (added in B3).
+# 8080 is the port the Lambda Web Adapter sends requests to by default.
 EXPOSE 8080
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8080", "--no-access-log"]

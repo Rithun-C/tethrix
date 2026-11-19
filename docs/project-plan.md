@@ -13,7 +13,7 @@ building one application end to end, inside the AWS Free plan.
   page in task G-02), or earlier if credits run out.
 - Credits: 100 USD now, up to 100 USD more from the Week 0 activities.
 - Time available: 20 to 25 hours a week.
-- Region: us-east-1. Public GitHub repo. No custom domain.
+- Region: us-east-1. Public GitHub repo. Domain `tethrix.satrix.in` (ADR-0006; until 2026-11-20 the plan was no custom domain).
 - End of project: export data, destroy everything, let the account close.
 - Hard deadline for the final destroy (task O-11): 2027-04-30.
 
