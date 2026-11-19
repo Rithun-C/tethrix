@@ -58,10 +58,10 @@ Details:
 |---|---|---|
 | CPU architecture | arm64 (Graviton) | About 20% cheaper per second than x86, and Apple Silicon Macs build it natively |
 | Base image | Official slim Python image, pinned by digest (chosen in B2) | Small, well maintained |
-| Web Adapter | Copied in from AWS's public image, pinned by version and digest (checked in B3) | Pinned like every other dependency |
+| Web Adapter | Copied in from AWS's public image, pinned by version and digest. B3: version 1.1.0, readiness check on `/api/v1/health` requiring 200 | Pinned like every other dependency |
 | User inside the container | Non-root | If the app is compromised, the attacker is not root inside the container |
 | Memory, timeout | 512 MB, 10 seconds (tuned in B3) | Enough for FastAPI; a short timeout stops runaway requests |
-| ECR repository | Private, scan on push, immutable tags, keep only the last 5 images | Scanning is free; immutable tags mean a tag always means the same image; the lifecycle rule keeps storage cost tiny |
+| ECR repository | Private, scan on push, immutable tags, keep only the last 3 images (5 until 2026-11-20; changed to match the cost model, B3 decision 6) | Scanning is free; immutable tags mean a tag always means the same image; the lifecycle rule keeps storage cost tiny |
 | Image tags | The Git commit ID | Every running image can be traced to its exact code |
 
 ## Consequences

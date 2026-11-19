@@ -21,12 +21,12 @@ commands, how to verify it worked, and how to undo it.
 | [Git repo, GitHub settings and CI](repo-and-ci.md) | B1-01, B1-03, B1-05 |
 | [Local development](local-dev.md) | B2 |
 | Kubernetes lab with kind: `infra/labs/kind/README.md` (a lab, kept with its files) | B2-07 |
+| [Manual deploy and smoke test](deploy-manual.md) | B3-08 |
 
 ## Planned runbooks
 
 | Runbook | Written in |
 |---|---|
-| Manual deploy and smoke test | B3 |
 | Rollback | B6 |
 | Backup and restore | Operations |
 | Leaked access key response | Operations |

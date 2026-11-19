@@ -369,3 +369,50 @@ multi-platform index. Checked on GitHub: the project now lives at
   and ADR-0003 already reads the token from `X-Auth-Token`. Worth knowing in B4.
 - The app receives CloudFront's SigV4 signature in the `Authorization` header. It is
   never logged, because the middleware logs no headers (SR-42).
+
+## 11. Build notes: pull request 2, Terraform and deploy tools (2026-11-20)
+
+### Files written
+
+| Task | Files |
+|---|---|
+| B3-01 | `infra/modules/ecr_repository/`, `infra/app/ecr.tf` |
+| B3-02 | `infra/modules/lambda_container_api/`, `infra/app/lambda.tf` |
+| B3-03 | `infra/modules/dynamodb_table/`, `infra/app/dynamodb.tf` |
+| B3-04 | `infra/app/frontend.tf`, `dns.tf` (ADR-0006), `cloudfront.tf`, `functions/spa_router.js`; `dist` stage in `app/frontend/Dockerfile` |
+| B3-05 | `/api/*` behaviour, Lambda OAC and the two Lambda permissions in `cloudfront.tf` |
+| B3-06 | Response headers policy in `cloudfront.tf` |
+| B3-07, B3-08 | `scripts/smoke.sh`, `make push-backend`, `make publish-frontend`, `make smoke`, `docs/runbooks/deploy-manual.md` |
+
+### Results
+
+| Check | Result |
+|---|---|
+| `terraform validate` | All three stacks valid |
+| tflint | Clean |
+| checkov (Terraform) | 161 passed, 0 failed, 36 skipped with reasons (F-021) |
+| Trivy config | Clean; one ignore with reason (WAF, AWS-0011) |
+| Semgrep | Clean; four exceptions with reasons (KMS and X-Ray) |
+| Routing function | Tested with Node against six paths: `/`, `/todos`, a dated journal path, an asset, a file at the root, `/index.html` |
+| `scripts/smoke.sh` | `bash -n` and shellcheck clean. Cannot run before the deploy |
+| `make check` (everything) | Pass |
+| `terraform plan` and `apply` | Not run: Claude has no AWS credentials. The owner runs them with the runbook |
+
+### What differs from the design
+
+| Design | Built | Why |
+|---|---|---|
+| HSTS with one year, no subdomains | Also `includeSubDomains` | checkov CKV_AWS_259. It only covers names under `tethrix.satrix.in`, never the parent, so it is safe. `preload` is skipped with a reason |
+| Not in the design | A CAA record that allows only Amazon to issue certificates for the name | Free, one record, and part of the answer to T-032 |
+| Not in the design | `final_destroy` variable | One switch for the end of the project: turns off DynamoDB deletion protection and lets ECR be deleted with images inside |
+| Negative tests run by hand | `make smoke` runs them all and prints PASS or FAIL | Repeatable after every deploy; B6 can run the same script |
+| Lambda role | Also a condition `aws:SourceAccount` in its trust policy | Stops a function in another account from using our role (the "confused deputy" problem) |
+| Concurrency cap of 5 | No reservation (`-1`) | The account limit is 10, and AWS keeps 10 unreserved, so no reservation is possible. The limit of 10 is the cap (SR-72) |
+
+### Things only the first deploy can prove
+
+- That Lambda accepts the image as pushed (`--provenance=false --sbom=false`).
+- That a POST without the body hash is refused, and with what status.
+- That the `invoked_via_function_url` permission is what AWS expects for OAC.
+
+The runbook's "Problems" table covers each of these.

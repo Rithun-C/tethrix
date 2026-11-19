@@ -1,7 +1,6 @@
 # ADR-0006: Custom domain and DNS
 
-- Status: Proposed. The domain itself is the owner's decision (2026-11-20); how DNS is
-  hosted (below) waits for the owner's confirmation
+- Status: Accepted 2026-11-20 (domain and Option A both confirmed by the owner)
 - Date: 2026-11-20
 - Task: B3-04
 - Replaces the decision of 2026-11-11 "No custom domain; use the default CloudFront
@@ -70,7 +69,7 @@ A CNAME for `tethrix` pointing at the CloudFront name, and the ACM validation CN
 
 ## Decision
 
-Option A, if the owner confirms. It keeps hard constraint 4 for a small, known cost, and
+Option A. It keeps hard constraint 4 for a small, known cost, and
 Route 53 is worth practising.
 
 Details:

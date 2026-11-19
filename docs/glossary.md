@@ -264,3 +264,7 @@ they first come up. AWS service names are explained in the bolt where they are f
 | DNS validation | ACM proves we control a name by asking for a special DNS record; it stays in place so renewals are automatic. |
 | Certificate Transparency | Public logs of every TLS certificate issued. A domain becomes public the moment its certificate exists. |
 | Subdomain takeover | Someone else serves content on our name because a DNS record still points at something we deleted. |
+| CAA record | A DNS record that says which certificate authorities may issue certificates for a name. Ours allows only Amazon. |
+| `TF_VAR_` variable | An environment variable Terraform reads as an input: `TF_VAR_backend_image_tag` sets `var.backend_image_tag`. |
+| `-target` (Terraform) | Plan or apply only the named resources and what they depend on. For exceptions only, such as the first deploy. |
+| Smoke test | A short set of checks right after a deploy that the main paths work. Ours also checks that the side doors are closed. |

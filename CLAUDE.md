@@ -142,6 +142,8 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | 2026-11-15 | App tests and linters run inside the dev containers, on the laptop and in CI. FastAPI `/docs` is off everywhere. Logging uses Python's own `logging` (B2) |
 | 2026-11-20 | B3 design approved with all recommendations: temporary `POST /api/v1/echo` until B5, CloudFront Function for React routes, CloudFront access logs off, DynamoDB PITR on, first apply with `-target`, ECR keeps 3 images, three pull requests |
 | 2026-11-20 | The app's domain is `tethrix.satrix.in`, a subdomain of the owner's domain (ADR-0006). Only the subdomain is used by this project |
+| 2026-11-20 | DNS: a Route 53 hosted zone for `tethrix.satrix.in` only, delegated with NS records at the parent's DNS provider (ADR-0006 Accepted) |
+| 2026-11-20 | Lambda concurrency: account limit is 10, so no reservation is possible; the account limit is the cap (SR-72) |
 
 ## Open decisions
 
@@ -150,7 +152,6 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | Editor library: TipTap vs BlockNote | ADR in bolt B8 |
 | Journal encryption: SSE vs KMS key vs client-side | ADR in bolt B8 |
 | App name | Any time |
-| DNS for `tethrix.satrix.in`: Route 53 subdomain zone or records by hand | ADR-0006, before B3 pull request 2 |
 
 ## Current status
 
@@ -261,5 +262,14 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   (`docs/bolts/B3-walking-skeleton.md`) approved with all recommendations and the
   custom domain `tethrix.satrix.in` (ADR-0006, Proposed: DNS hosting to confirm).
   Pull request 1 (app changes, no AWS) started on branch `b3/app`.
+- 2026-11-20: B3 pull request 1 committed on `b3/app` (Web Adapter 1.1.0, 16 KB body
+  limit, temporary echo route, body hash in the frontend, nginx 1.31.7 for F-020).
+  `make check` passes. ADR-0006 Accepted (Route 53 for the subdomain). Account
+  concurrency limit is 10.
+- 2026-11-20: B3 pull request 2 written on `b3/terraform` (on top of `b3/app`): three
+  modules, the app stack (ECR, DynamoDB, Lambda, Route 53, ACM, S3, CloudFront),
+  `make push-backend`, `make publish-frontend`, `make smoke`, runbook
+  `docs/runbooks/deploy-manual.md`. Static checks only: nothing applied. Next: owner
+  merges PR 1 and PR 2, does the Free plan check, then deploys with the runbook.
 - Local note: this laptop's network needs `BUILD_NETWORK := host` in `local.mk` (git
   ignored) for image builds; see `docs/runbooks/local-dev.md`, "Problems".

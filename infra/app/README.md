@@ -1,7 +1,7 @@
 # infra/app
 
-The Terraform stack for the application itself. It has no resources yet; the first ones
-(ECR, Lambda, CloudFront) arrive in bolt B3.
+The Terraform stack for the application itself (bolt B3 onward). How to deploy it:
+`docs/runbooks/deploy-manual.md`.
 
 | File | What it holds |
 |---|---|
@@ -9,14 +9,14 @@ The Terraform stack for the application itself. It has no resources yet; the fir
 | `backend.tf` | State location (the S3 bucket from `infra/bootstrap`) |
 | `backend.hcl.example` | Template for `backend.hcl`, which holds the bucket name |
 | `providers.tf` | Region and default tags |
-| `variables.tf` | Inputs |
+| `variables.tf` | Inputs: domain, backend image tag, concurrency cap, final-destroy switch |
+| `ecr.tf` | Repository for the backend image (module `ecr_repository`) |
+| `dynamodb.tf` | The app's table (module `dynamodb_table`) |
+| `lambda.tf` | The backend function and its function URL (module `lambda_container_api`) |
+| `dns.tf` | Route 53 zone for `tethrix.satrix.in`, CAA record, ACM certificate, alias records (ADR-0006) |
+| `frontend.tf` | Private bucket for the React build |
+| `cloudfront.tf` | Distribution, OAC, routing function, security headers, Lambda permissions |
+| `functions/spa_router.js` | The CloudFront Function that sends React routes to `index.html` |
+| `outputs.tf` | Values the `make` deploy targets read. Some contain the account ID: never paste them into docs |
 
-## First use (owner, in B3)
-
-```sh
-cp backend.hcl.example backend.hcl   # then replace ACCOUNT_ID
-AWS_PROFILE=admin terraform init -backend-config=backend.hcl
-AWS_PROFILE=admin terraform plan
-```
-
-Until then, `make validate` checks the code without touching AWS.
+`make validate`, `make lint`, `make checkov` check the code without touching AWS.
