@@ -53,6 +53,14 @@ COPY src ./src
 # Type errors stop the build; then Vite writes the finished site to /app/dist.
 RUN tsc --noEmit && vite build --configLoader runner
 
+# ---- dist: only the built files, for `make publish-frontend` ------------------------
+# An image that holds nothing but the contents of /app/dist. It is never run:
+# `docker build --target dist --output type=local,dest=...` copies the files out to the
+# laptop, which then uploads them to S3. Without this stage, --output would copy the
+# whole build stage, node_modules included.
+FROM scratch AS dist
+COPY --from=build /app/dist /
+
 # ---- static: the built files behind a small web server ------------------------------
 # nginx-unprivileged is nginx set up to run as a non-root user (uid 101) on port 8080.
 # 1.31 is nginx's mainline line. In November 2026 the stable line (1.30) had no rebuilt

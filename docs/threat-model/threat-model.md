@@ -152,15 +152,20 @@ the app down.
 | T-029 | Local dev | Local dev services reachable from the network; DynamoDB Local has no sign-in | Low | Every Compose port bound to `127.0.0.1`; seed data is made up; real data never local | Review of `compose.yaml` | B2 | Done |
 | T-030 | Images | A secret or private file is baked into an image layer | Medium | Allow-list `.dockerignore`; no secrets as build arguments; Trivy secret scan of the built image in CI | CI gate (`make image-scan`) | B2 | Done |
 | T-031 | Containers | A compromised container has more power than the app needs | Low | Non-root user, read-only file system, all capabilities dropped, `no-new-privileges`, final image without build tools | hadolint, checkov; review | B2 | Done |
+| T-032 | DNS | Subdomain takeover: the Route 53 zone is deleted while the NS records for `tethrix` still exist at `satrix.in`, and someone else claims the name | Medium | Destroy order in the runbook: NS records at the parent are removed first; CAA record allows only Amazon to issue certificates | Runbook `deploy-manual.md`, "Undo" | B3 | Planned |
+| T-033 | API | The API is public with no sign-in until B4 | Low | Only health and the byte-count echo exist; no data; body limit, 10 s timeout, account concurrency limit, budgets | `make smoke`; route list test | B3 | Planned |
+| T-034 | Images | A wrong or vulnerable image reaches Lambda | Medium | Trivy scan of the exact image before push; immutable tags tied to commit IDs; push refused with uncommitted changes; ECR scan on push | `make push-backend` | B3 | Planned |
+| T-035 | Frontend bucket | The bucket is read directly or its files are changed | Medium | Bucket private, OAC with `AWS:SourceArn`, TLS-only policy, public access blocked, only the admin can write | `make smoke` (direct read gives 403) | B3 | Planned |
 
 ## 5. Summary
 
 | | High | Medium | Low | Total |
 |---|---|---|---|---|
-| Threats | 11 | 13 | 7 | 31 |
+| Threats | 11 | 16 | 8 | 35 |
 | Already done (Week 0) | | | | 4 |
 | Done in B1 (T-008 in part, T-016, T-028) | | | | 3 |
 | Done in B2 (T-029, T-030, T-031) | | | | 3 |
+| Added in B3, done after the first deploy (T-032 to T-035) | | | | 0 |
 | Accepted with reason | | | | 2 |
 
 The High risks that need the most care: IDOR (T-013), stored XSS (T-006), journal text in
@@ -176,3 +181,4 @@ logs (T-014), JWT checks (T-001), supply chain (T-008) and the CI deploy role (T
 | 2026-11-15 | B2, pull request 1 | T-029, T-030 and T-031 added and mitigated (local ports, secrets in images, container rights). T-008: pip-audit now runs in CI; npm audit follows with the frontend |
 | 2026-11-15 | B2, pull request 2 | T-008: npm audit now runs in CI and npm install scripts are off, so every planned control is in place. No new threats from the frontend skeleton: it has no user input and no stored data yet |
 | 2026-11-15 | B2, pull request 3 | Reviewed for the kind lab: no new threats. The cluster exists only on the laptop for the length of the lab, holds made-up data and is reached only through a port-forward on localhost. The lab practises the T-031 controls in Kubernetes form (Pod Security "restricted", network policies). Manifests are now scanned by checkov |
+| 2026-11-20 | B3, pull requests 1 and 2 | T-032 to T-035 added (subdomain takeover, public API before sign-in, image supply, frontend bucket). The custom domain (ADR-0006) removes the old-TLS gap that the design had expected. T-002, T-020, T-021, T-024 controls written in Terraform; they move to Done when `make smoke` passes after the deploy |

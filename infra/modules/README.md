@@ -3,7 +3,11 @@
 A module is a folder of Terraform files that can be used more than once, like a function
 in code: inputs (variables) go in, resources are created, outputs come back.
 
-There are no modules yet. The first ones are written in bolt B3.
+| Module | What it makes | Bolt |
+|---|---|---|
+| [ecr_repository](ecr_repository/README.md) | Private ECR repository, immutable tags, scan on push, lifecycle rule | B3 |
+| [dynamodb_table](dynamodb_table/README.md) | The app's single table from I-08 | B3 |
+| [lambda_container_api](lambda_container_api/README.md) | Container Lambda with its role, log group and an `AWS_IAM` function URL | B3 |
 
 ## Rules for every module
 
