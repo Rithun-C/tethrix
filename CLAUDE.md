@@ -318,3 +318,10 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   `user-disable` / `user-delete` with `docs/runbooks/user-accounts.md`, smoke test with
   sign-in checks. Static checks only. Next: owner merges #17 and this, deploys, creates
   the first user and signs in.
+- 2026-11-20: #17 and #19 merged (#18 closed when its base branch was deleted; #19 is
+  the same commit on `main`). Owner deployed `e8a2622`: smoke passed, first user created,
+  sign-in with password and authenticator app works. B4 pull request 4 written on
+  branch `b4/close`: theory note `docs/theory/oauth-oidc-jwt.md`, ADR-0003 deploy note,
+  threat model (T-001, T-003, T-015, T-033, T-039 Done), deploy record, glossary,
+  tracker. Waiting for the owner's back-button and second-user checks, the journal
+  entry and approval to close B4.

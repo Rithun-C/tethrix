@@ -88,6 +88,13 @@ they first come up. AWS service names are explained in the bolt where they are f
 | Issuer (`iss`) | Who signed a token. Ours: the user pool's address. |
 | `kid` | Key ID in a token's header: which of the issuer's keys signed it. |
 | `alg: none` attack | A forged token that claims to need no signature. Refused because only RS256 is accepted. |
+| Access token | The short-lived token (60 minutes here) the app sends to the API to prove who is calling. |
+| ID token | A token that tells the app who signed in (for example the email). Never used to call the API. |
+| Refresh token | A longer-lived token (12 hours here) that gets new access and ID tokens without signing in again; sign-out revokes it. |
+| User pool | Cognito's user directory: accounts, passwords, MFA, and the tokens it issues. |
+| Identity pool | A separate Cognito product that swaps a sign-in token for temporary AWS credentials. Not used here. |
+| BFF (backend for frontend) | A pattern where the backend does the sign-in and keeps the tokens, and the browser gets only an `HttpOnly` session cookie. |
+| CSRF (cross-site request forgery) | Another website making your browser send a request to our site with your cookies. A risk for cookie sessions, not for `Authorization` headers. |
 | JWT authorizer | An API Gateway feature that checks a JWT before calling the backend. |
 | Temporary password | The one-time password Cognito emails to a new account; it must be changed at first sign-in. |
 | `{proxy+}` route | An API Gateway route that matches a path and everything under it, such as `/api/` plus any rest. |

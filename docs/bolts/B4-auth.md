@@ -434,3 +434,32 @@ Branch `b4/terraform` (on top of `b4/frontend`).
   only. If the sign-in page refuses, add `ALLOW_USER_SRP_AUTH` (still no password sent
   through the API).
 - Cognito's `/logout` with the extra `post_logout_redirect_uri` parameter.
+
+## 14. Deploy and closing (2026-11-20)
+
+The owner merged #17 and #19 and deployed commit `e8a2622` with the deploy runbook.
+
+- `make smoke`: passed, 0 failed.
+- The first user was created with `make user-create`. Sign-in on AWS worked: temporary
+  password, new password, authenticator app set up at first sign-in, dashboard with the
+  owner's email and time zone. Sign-out worked.
+- Section 10 risks: the classic hosted UI did offer authenticator-app setup for an
+  admin-created user (no CLI step needed); the prefix `tethrix-app` was free; the apply
+  created no CloudFront resource; the hosted UI worked with only
+  `ALLOW_REFRESH_TOKEN_AUTH` in `explicit_auth_flows`.
+
+Pull request 4 (branch `b4/close`): theory note `docs/theory/oauth-oidc-jwt.md`
+(B4-07), ADR-0003 deploy note, threat model, deploy record, glossary, tracker and
+`CLAUDE.md`.
+
+### Section 9 "Done when"
+
+| Item | Result |
+|---|---|
+| Without a token every protected route answers 401, through API Gateway and in tests | Done: `make smoke` and the backend tests |
+| Owner signs in on AWS with password and authenticator app, sees their email, signs out | Done (owner, 2026-11-20) |
+| The back button after sign-out does not bring the data back | Owner to confirm (see below) |
+| A second test user cannot see the first user's profile | Done in tests (`test_idor.py`); manual check on AWS: owner to confirm |
+| Local `make up`: alice and bob each see only their own profile | Done (browser check, PR 2) |
+| `AUTH_MODE=local` with the Lambda variable set fails to start | Done (`test_config.py`) |
+| Scanners pass; records updated; owner's journal entry | Scanners and records done; journal entry is the owner's |
