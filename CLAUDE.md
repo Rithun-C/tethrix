@@ -311,3 +311,10 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   `Authorization: Bearer` on API calls. Package cooldown raised to 14 days (backend
   relocked one release back). 60 frontend tests; browser check 15 of 15 against the
   local stack. Build notes in `docs/bolts/B4-auth.md` section 12.
+- 2026-11-20: B4 pull request 2 pushed as #17. B4 pull request 3 written on branch
+  `b4/terraform`: `infra/app/auth.tf` (Cognito Lite pool, prefix domain `tethrix-app`,
+  web client), JWT authorizer on `ANY /api/{proxy+}` with open health and auth-config
+  routes, Lambda `COGNITO_*` settings and `dynamodb:GetItem`, `make user-create` /
+  `user-disable` / `user-delete` with `docs/runbooks/user-accounts.md`, smoke test with
+  sign-in checks. Static checks only. Next: owner merges #17 and this, deploys, creates
+  the first user and signs in.

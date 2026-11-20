@@ -36,10 +36,49 @@ resource "aws_apigatewayv2_integration" "lambda" {
   timeout_milliseconds = 12000
 }
 
-# One catch-all route: every method and path goes to Lambda. FastAPI decides what each
-# path means. Sign-in is checked by FastAPI from B4 on (ADR-0003).
+# Routes (B4 decision 2). API Gateway picks the most specific match:
+#
+#   GET /api/v1/health, GET /api/v1/auth/config  open (SR-01)
+#   ANY /api/{proxy+}                            needs a valid Cognito access token
+#   $default                                     everything else: the React app's files
+#
+# FastAPI checks every token again, and more (token_use, the profile). The authorizer is
+# the outer lock: a request without a valid token never starts Lambda (T-021).
+
+# Checks the signature with Cognito's keys, the issuer, the expiry, and that the token is
+# for our app client (for access tokens, API Gateway compares `client_id` with the
+# audience list, since they carry no `aud`).
+resource "aws_apigatewayv2_authorizer" "cognito" {
+  api_id           = aws_apigatewayv2_api.app.id
+  name             = "cognito"
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+
+  jwt_configuration {
+    issuer   = local.cognito_issuer
+    audience = [aws_cognito_user_pool_client.web.id]
+  }
+}
+
+resource "aws_apigatewayv2_route" "api" {
+  api_id             = aws_apigatewayv2_api.app.id
+  route_key          = "ANY /api/{proxy+}"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+}
+
+resource "aws_apigatewayv2_route" "open" {
+  #checkov:skip=CKV_AWS_309:Open on purpose (SR-01): the health check, and the public sign-in settings the app needs before anyone is signed in. Listed in api/auth.py OPEN_API_ROUTES too.
+  for_each = toset(["GET /api/v1/health", "GET /api/v1/auth/config"])
+
+  api_id    = aws_apigatewayv2_api.app.id
+  route_key = each.key
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "default" {
-  #checkov:skip=CKV_AWS_309:Sign-in is checked in FastAPI (ADR-0003, B4); the catch-all route also serves the public React files and the health check. A JWT authorizer is reconsidered in B4.
+  #checkov:skip=CKV_AWS_309:The catch-all serves the public React files (index.html, /assets). Every /api path is matched by the routes above first, and FastAPI refuses tokenless API calls on any route (ADR-0003).
   api_id    = aws_apigatewayv2_api.app.id
   route_key = "$default"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"

@@ -24,6 +24,7 @@ Status: Open, Fixed, Accepted (give the reason), False positive.
 | 2026-11-20 | B3 API Gateway change: `make check` | Whole repo; `infra/app` without CloudFront, with API Gateway; backend image with the React files | tflint, checkov, Trivy, Semgrep pass | 0 new | - | checkov CKV_AWS_309 (route without authorizer) skipped with reason: sign-in is checked in FastAPI from B4 (ADR-0003) | None kept |
 | 2026-11-20 | B4 pull request 1: `make check` | Whole repo; backend with PyJWT, local OIDC server in Compose | All scanners pass | 0 new | - | ruff S105/S106 on Cognito's `token_use` claim name: false positive, marked inline | None kept |
 | 2026-11-20 | B4 pull request 2: `make check` | Whole repo; frontend with `oidc-client-ts` 3.5.0; backend relocked under the 14-day cooldown | All scanners pass | 0 new | - | npm audit: still only `minimatch` (F-018, Dependabot alert #1); the fix (ESLint 10.15.0, typescript-eslint 8.73.0) is too new under the 14-day rule until 2026-11-30 | None kept |
+| 2026-11-20 | B4 pull request 3: `make check` | Whole repo; `infra/app` with Cognito and the JWT authorizer; `scripts/user.sh` | All scanners pass | 0 new | - | checkov CKV_AWS_309 skipped with reason on the two open routes | None kept |
 
 ## Findings
 
