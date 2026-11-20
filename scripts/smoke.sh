@@ -4,7 +4,7 @@
 # Checks from the outside, like a visitor or an attacker would, that:
 #   - the page, its files and the API answer, with the security headers
 #   - caching is right: files for a year, index.html never
-#   - request bodies arrive, and oversized ones are refused
+#   - sign-in is set up: settings, Cognito's page, only our callback, no access without a token
 #   - the side doors are closed (other files, plain HTTP, old TLS, the default address
 #     once the custom domain is on)
 #
@@ -75,22 +75,40 @@ fi
 echo "== The API"
 
 code=$(curl -s -D "$tmp/api" -o "$tmp/api.body" --max-time 15 "$base/api/v1/health" -w '%{http_code}')
-expect_status "API health" 200 "$code"
+expect_status "API health (open)" 200 "$code"
 if grep -q '"status":"ok"' "$tmp/api.body"; then ok "API health body"; else bad "API health body: $(cat "$tmp/api.body")"; fi
 has_security_headers "API response" "$tmp/api"
 
-code=$(curl -s -o "$tmp/nope.body" --max-time 15 "$base/api/v1/nope" -w '%{http_code}')
-expect_status "unknown API path" 404 "$code"
-if grep -q '"not_found"' "$tmp/nope.body"; then ok "unknown API path answers in the API error format, not the React page"; else bad "unknown API path body: $(head -c 120 "$tmp/nope.body")"; fi
+echo "== Sign-in (B4)"
 
-body='{"hello":"world"}'
-code=$(curl -s -o "$tmp/echo.body" --max-time 15 -X POST "$base/api/v1/echo" \
-  -H 'Content-Type: application/json' --data "$body" -w '%{http_code}')
-expect_status "POST with a body" 200 "$code"
-if grep -q "\"received_bytes\":${#body}" "$tmp/echo.body"; then ok "echo counted ${#body} bytes"; else bad "echo body: $(cat "$tmp/echo.body")"; fi
+code=$(curl -s -D "$tmp/cfg" -o "$tmp/cfg.body" --max-time 15 "$base/api/v1/auth/config" -w '%{http_code}')
+expect_status "sign-in settings (open)" 200 "$code"
+cfg() { python3 -c "import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])" "$tmp/cfg.body" "$1" 2>/dev/null; }
+client_id=$(cfg clientId)
+authorize=$(cfg authorizationEndpoint)
+cognito="${authorize%/oauth2/authorize}"
+case "$cognito" in
+  https://*.auth.us-east-1.amazoncognito.com) ok "sign-in address is Cognito's ($cognito)" ;;
+  *) bad "sign-in address looks wrong: '$cognito'" ;;
+esac
+case "$(header content-security-policy "$tmp/page")" in
+  *"connect-src 'self' $cognito"*) ok "CSP lets the page reach only us and Cognito" ;;
+  *) bad "CSP connect-src does not name Cognito" ;;
+esac
 
-big=$(head -c 17000 /dev/zero | tr '\0' 'x')
-expect_status "17 KB body is over the limit (SR-31)" 413 "$(status -X POST "$base/api/v1/echo" --data "$big")"
+for path in /api/v1/me /api/v1/nope; do
+  expect_status "$path without a token is refused" 401 "$(status "$base$path")"
+done
+expect_status "a made-up token is refused" 401 "$(status -H 'Authorization: Bearer abc.def.ghi' "$base/api/v1/me")"
+expect_status "POST without a token is refused" 401 "$(status -X POST "$base/api/v1/echo" --data x)"
+expect_status "the old X-Auth-Token header does not count" 401 "$(status -H 'X-Auth-Token: abc.def.ghi' "$base/api/v1/me")"
+
+# Cognito's sign-in page for our own callback, and a refusal for anyone else's (T-039).
+login_url() { echo "$cognito/login?client_id=$client_id&response_type=code&scope=openid+email&redirect_uri=$1"; }
+curl -s -o "$tmp/login.body" --max-time 15 "$(login_url "$base/auth/callback")"
+if grep -q 'signInFormUsername\|name="username"' "$tmp/login.body"; then ok "Cognito shows the sign-in form for our callback"; else bad "no sign-in form for our own callback"; fi
+curl -s -o "$tmp/evil.body" --max-time 15 "$(login_url "https://evil.example/auth/callback")"
+if grep -q 'signInFormUsername\|name="username"' "$tmp/evil.body"; then bad "Cognito offered sign-in for a foreign callback"; else ok "Cognito refuses a foreign callback address"; fi
 
 echo "== Side doors must be closed"
 

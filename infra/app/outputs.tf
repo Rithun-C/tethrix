@@ -3,7 +3,7 @@
 
 output "app_url" {
   description = "The app's address: the custom domain, or the execute-api address while use_custom_domain is false."
-  value       = var.use_custom_domain ? "https://${var.domain_name}" : aws_apigatewayv2_api.app.api_endpoint
+  value       = local.app_url
 }
 
 output "api_endpoint" {
@@ -34,4 +34,19 @@ output "lambda_log_group" {
 output "api_access_log_group" {
   description = "API Gateway's access logs: one line per request at the edge."
   value       = aws_cloudwatch_log_group.api_access.name
+}
+
+output "cognito_user_pool_id" {
+  description = "For make user-create, user-disable, user-delete."
+  value       = aws_cognito_user_pool.app.id
+}
+
+output "cognito_domain_url" {
+  description = "Cognito's hosted sign-in address."
+  value       = local.cognito_domain_url
+}
+
+output "table_name" {
+  description = "The app's DynamoDB table, for make user-create (profile items)."
+  value       = module.table.name
 }
