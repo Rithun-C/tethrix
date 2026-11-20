@@ -52,3 +52,16 @@ variable "final_destroy" {
   type        = bool
   default     = false
 }
+
+variable "cognito_domain_prefix" {
+  description = "Prefix of Cognito's hosted sign-in address, <prefix>.auth.us-east-1.amazoncognito.com. Must be unique in the region; change it if the first apply says it is taken."
+  type        = string
+  default     = "tethrix-app"
+
+  validation {
+    # Cognito's own rules: lower-case letters, digits and hyphens, and none of the
+    # reserved words.
+    condition     = can(regex("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$", var.cognito_domain_prefix)) && !can(regex("aws|amazon|cognito", var.cognito_domain_prefix))
+    error_message = "Use lower-case letters, digits and hyphens, without the words aws, amazon or cognito."
+  }
+}

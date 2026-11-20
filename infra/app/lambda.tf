@@ -14,13 +14,18 @@ module "backend" {
   timeout_seconds      = 10
   reserved_concurrency = var.lambda_reserved_concurrency
 
+  # Not secret: the browser sees all of these during sign-in. Never AUTH_MODE or
+  # LOCAL_OIDC_* (make guard-local-auth, SR-06).
   environment = {
-    LOG_LEVEL      = "INFO"
-    DYNAMODB_TABLE = module.table.name
+    LOG_LEVEL            = "INFO"
+    DYNAMODB_TABLE       = module.table.name
+    COGNITO_USER_POOL_ID = aws_cognito_user_pool.app.id
+    COGNITO_CLIENT_ID    = aws_cognito_user_pool_client.web.id
+    COGNITO_DOMAIN       = local.cognito_domain_url
   }
 
-  # B3: the code reads no data, so no database permissions yet (SR-70). B5 adds the
-  # exact actions on module.table.arn and module.table.index_arns.
-  dynamodb_actions       = []
-  dynamodb_resource_arns = []
+  # B4: the sign-in check reads the user's profile item, and nothing else (SR-70). B5
+  # adds the todo actions and the index.
+  dynamodb_actions       = ["dynamodb:GetItem"]
+  dynamodb_resource_arns = [module.table.arn]
 }

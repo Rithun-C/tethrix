@@ -403,3 +403,34 @@ flowchart LR
   sign-out in AWS.
 - Cognito's token and revoke endpoints must answer the browser's CORS preflight from the
   app's address; they are meant for browser apps, so they should.
+
+## 13. Build notes: pull request 3, Terraform and user accounts (2026-11-20)
+
+Branch `b4/terraform` (on top of `b4/frontend`).
+
+### Files written
+
+| Task | Files |
+|---|---|
+| B4-01 | `infra/app/auth.tf` (user pool: Lite, admin-only, TOTP required, 14-character passwords, deletion protection; prefix domain, classic hosted UI; web client: code flow, no secret, exact callback and sign-out URLs, 60 min / 60 min / 12 h, revocation on), `variables.tf` (`cognito_domain_prefix`), `outputs.tf` (pool ID, sign-in address, table name) |
+| B4-02 | `infra/app/api.tf`: JWT authorizer (Cognito issuer, client ID as audience), `ANY /api/{proxy+}` with the authorizer, open `GET /api/v1/health` and `GET /api/v1/auth/config`, `$default` for the React files; `lambda.tf`: `COGNITO_*` settings and `dynamodb:GetItem` on the table |
+| B4-08 | `scripts/user.sh`, `make user-create`, `user-disable`, `user-delete`, `docs/runbooks/user-accounts.md` |
+| B4-07, B3 | `scripts/smoke.sh`: sign-in checks (settings, Cognito page, foreign callback refused, 401 without a token); deploy runbook updated |
+| Guard | `make guard-local-auth` now skips comment lines (it had caught a comment naming the settings); proven to still catch a real setting |
+
+### Results
+
+- `terraform validate`, tflint, checkov, Trivy and Semgrep pass. New checkov skips: CKV_AWS_309
+  on the two open routes (open on purpose, SR-01); the `$default` reason updated.
+- ShellCheck passes on `scripts/user.sh` (two SC2016 notes marked: the backticks are AWS
+  CLI query syntax) and `scripts/smoke.sh`.
+
+### Not checked, because Claude has no AWS access
+
+- That the prefix `tethrix-app` is free (it is global per region).
+- That the classic hosted UI offers authenticator-app setup at first sign-in for an
+  admin-created user (section 10). If not: the runbook gets a CLI step.
+- That the hosted UI works with `explicit_auth_flows = ["ALLOW_REFRESH_TOKEN_AUTH"]`
+  only. If the sign-in page refuses, add `ALLOW_USER_SRP_AUTH` (still no password sent
+  through the API).
+- Cognito's `/logout` with the extra `post_logout_redirect_uri` parameter.

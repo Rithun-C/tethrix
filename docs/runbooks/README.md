@@ -22,6 +22,7 @@ commands, how to verify it worked, and how to undo it.
 | [Local development](local-dev.md) | B2 |
 | Kubernetes lab with kind: `infra/labs/kind/README.md` (a lab, kept with its files) | B2-07 |
 | [Manual deploy and smoke test](deploy-manual.md) | B3-08 |
+| [User accounts](user-accounts.md) | B4-08 |
 
 ## Planned runbooks
 

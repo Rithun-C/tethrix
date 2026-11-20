@@ -102,6 +102,14 @@ Lambda permission. The Lambda function itself is updated in place (new image) or
 created, not replaced. Nothing in `module.ecr` or `module.table` may be destroyed or
 replaced; if it is, stop and ask.
 
+First apply of B4 (sign-in): expect created: the Cognito user pool, its domain
+(`tethrix-app`), the app client, the JWT authorizer, and the routes `ANY /api/{proxy+}`,
+`GET /api/v1/health` and `GET /api/v1/auth/config`. Expect updated in place: the Lambda
+function (new image and the three `COGNITO_*` settings) and its role policy (now also
+`dynamodb:GetItem` on the table). Nothing destroyed. If the apply says the domain prefix
+is taken, add `-var cognito_domain_prefix=tethrix-app-2` (or another free name) and ask
+Claude to change the default.
+
 Later deploys: only the Lambda image changes.
 
 ### Step 5: smoke and negative tests
@@ -116,13 +124,19 @@ the domain is off, the TLS 1.1 check is reported for the record only, and the de
 address is the app's address.
 
 The tests are in `scripts/smoke.sh`; each line says what it checks: the page, a script
-file and the API with their security headers and caching, a POST, the 413 for a 17 KB
-body, a refused path outside the static folder, and no plain HTTP.
+file and the API with their security headers and caching; the sign-in settings and
+Cognito's sign-in page; 401 for API calls without a valid token; Cognito refusing a
+foreign callback address; a refused path outside the static folder; and no plain HTTP.
+The request body limit (413) is now covered by the unit tests: anonymous POSTs stop at
+API Gateway with 401 before the body limit is reached.
 
 Then by hand:
 
-1. Open the `app_url` address. Expected: the dashboard with "API: ok". The first visit
-   after a while takes a few seconds (cold start).
+1. Since B4: create your account first (`docs/runbooks/user-accounts.md`,
+   `make user-create`). Open the `app_url` address. Expected: Cognito's sign-in page;
+   after sign-in (and, the first time, a new password and the authenticator app), the
+   dashboard with "API: ok" and your time zone. The first visit after a while takes a
+   few seconds (cold start).
 2. Developer tools, Console tab: no CSP errors.
 3. Logs:
 
@@ -146,7 +160,8 @@ aws accessanalyzer validate-policy --policy-type IDENTITY_POLICY \
 rm /tmp/lambda-policy.json
 ```
 
-Expected: `[]`. The policy only allows writing to the function's own log group.
+Expected: `[]`. The policy allows writing to the function's own log group and, since
+B4, `dynamodb:GetItem` on the app's table (the profile check), nothing else.
 
 ### Step 7: confirm Terraform and AWS agree
 

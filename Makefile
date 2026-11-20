@@ -49,7 +49,7 @@ NODE_IMAGE    = $(shell sed -n 's/^FROM \(node:[^ ]*\) AS node-base/\1/p' app/fr
         guard-local-auth build lock fmt-backend lint-backend test-backend audit-backend hadolint \
         image-build image-scan check-backend check-images build-backend build-frontend \
         lock-frontend fmt-frontend lint-frontend test-frontend audit-frontend check-frontend \
-        push-backend smoke frontend-dist
+        push-backend smoke frontend-dist user-create user-disable user-delete
 
 help: ## List the commands
 	@grep -hE '^[a-z-]+:.*## ' Makefile | awk -F ':.*## ' '{printf "  make %-16s %s\n", $$1, $$2}'
@@ -76,7 +76,8 @@ validate: ## terraform validate on every stack, without a backend
 # settings, so a deployed function always checks Cognito tokens. The app also refuses to
 # start in Lambda with them (guard 1); this catches the mistake before a deploy.
 guard-local-auth: ## Fail if any Terraform file sets a local-only sign-in setting
-	@if grep -rnE 'AUTH_MODE|LOCAL_OIDC_|DYNAMODB_ENDPOINT_URL' --include='*.tf' infra; then \
+	@# Comment lines (starting with #) are skipped: they cannot set anything.
+	@if grep -rnE 'AUTH_MODE|LOCAL_OIDC_|DYNAMODB_ENDPOINT_URL' --include='*.tf' infra | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#'; then \
 	  echo "Local-only settings found in Terraform (see above)."; exit 1; \
 	else echo "guard-local-auth: no local-only settings in Terraform"; fi
 
@@ -290,6 +291,22 @@ push-backend: ## (owner, AWS) Build the React app into the backend image, scan i
 	docker push --quiet "$$repo:$$tag"; \
 	docker logout "$$registry" >/dev/null; \
 	echo; echo "Pushed. Next step: $(TF_APP) apply -var backend_image_tag=$$tag"
+
+# User accounts (B4-08). The owner runs these with their AWS profile; see
+# docs/runbooks/user-accounts.md. EMAIL is typed on the command line, never stored.
+USER_ARGS = "$$($(TF_APP) output -raw cognito_user_pool_id)" "$$($(TF_APP) output -raw table_name)"
+
+user-create: ## (owner, AWS) Create a user: make user-create EMAIL=... TZ=Asia/Kolkata
+	@test -n "$(EMAIL)" -a -n "$(TZ)" || { echo "Usage: make user-create EMAIL=you@example.com TZ=Asia/Kolkata"; exit 1; }
+	@./scripts/user.sh create $(USER_ARGS) "$(EMAIL)" "$(TZ)"
+
+user-disable: ## (owner, AWS) Disable a user and sign them out: make user-disable EMAIL=...
+	@test -n "$(EMAIL)" || { echo "Usage: make user-disable EMAIL=you@example.com"; exit 1; }
+	@./scripts/user.sh disable $(USER_ARGS) "$(EMAIL)"
+
+user-delete: ## (owner, AWS) Delete a user and their profile: make user-delete EMAIL=...
+	@test -n "$(EMAIL)" || { echo "Usage: make user-delete EMAIL=you@example.com"; exit 1; }
+	@./scripts/user.sh delete $(USER_ARGS) "$(EMAIL)"
 
 smoke: ## (owner, AWS) Smoke and negative tests against the deployed app
 	@./scripts/smoke.sh "$$($(TF_APP) output -raw app_url | sed 's|https://||')" \
