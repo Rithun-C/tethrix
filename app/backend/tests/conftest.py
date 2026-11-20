@@ -12,16 +12,32 @@ from fastapi.testclient import TestClient
 from api.config import Settings
 from api.logs import JsonFormatter
 from api.main import create_app
+from tests.auth_helpers import bearer, install_test_auth, make_token
 
 
 @pytest.fixture
 def app() -> FastAPI:
-    return create_app(Settings(log_level="INFO"))
+    test_app = create_app(Settings(log_level="INFO"))
+    install_test_auth(test_app)
+    return test_app
 
 
 @pytest.fixture
 def client(app: FastAPI) -> TestClient:
+    """Not signed in."""
     return TestClient(app)
+
+
+@pytest.fixture
+def alice(app: FastAPI) -> TestClient:
+    """Signed in as alice (B4-04: the two-user harness)."""
+    return TestClient(app, headers=bearer(make_token("alice")))
+
+
+@pytest.fixture
+def bob(app: FastAPI) -> TestClient:
+    """Signed in as bob."""
+    return TestClient(app, headers=bearer(make_token("bob")))
 
 
 class _Collector(logging.Handler):

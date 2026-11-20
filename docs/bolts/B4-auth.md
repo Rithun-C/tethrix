@@ -290,3 +290,52 @@ Four pull requests:
   account; the first apply confirms it.
 - `mock-oauth2-server`'s claim settings must produce `token_use` and `client_id`; checked
   in PR 1 before anything depends on it.
+
+## 11. Build notes: pull request 1, backend and local sign-in (2026-11-20)
+
+Branch `b4/backend`.
+
+### Files written
+
+| Task | Files |
+|---|---|
+| B4-02 | `app/backend/src/api/auth.py` (token checks, key cache, `auth_gate`, `current_user`), `config.py` (sign-in settings, Lambda guards), `main.py` (app-wide `auth_gate`, verifier, profile store), `errors.py` (keeps `WWW-Authenticate` on 401), `security_headers.py` (CSP allows the Cognito address), `middleware.py` (request log names the user) |
+| B4-04 | `db.py` (`DynamoProfileStore`), `routes/me.py`, `tests/auth_helpers.py`, `alice` and `bob` fixtures, `tests/test_idor.py`, `tests/test_routes.py` rewritten |
+| B4-05 | `compose.yaml` (`oidc` service, `AUTH_MODE=local`), `routes/auth_config.py`, `scripts/local-token.py`, `make guard-local-auth` (part of `make lint`), seed users renamed to `alice` and `bob` |
+| B4-06 | Threat model: T-004, T-041, T-042 Done; T-001, T-013 in progress; T-039 to T-042 added |
+| Docs | ADR-0003 "Update 2026-11-20", glossary, `docs/runbooks/local-dev.md` "Signing in locally" |
+
+### Pinned versions
+
+| Package or image | Version | Checked |
+|---|---|---|
+| `pyjwt[crypto]` | 2.15.1 (brings `cryptography` 50.0.2) | PyPI, project `jpadilla/pyjwt` |
+| `ghcr.io/navikt/mock-oauth2-server` | 6.1.4, by digest | GitHub releases: published 2026-10-28, more than two weeks old (7.0.x was too new) |
+
+### Results
+
+- Backend: 118 tests pass (66 new). They cover every token case in section 4 (B4-02),
+  the Lambda guards, the key cache limits, the two-user harness and "every protected
+  route answers 401 without a token".
+- ruff and mypy pass. Three `token_use` lines carry `noqa: S105/S106`: it is Cognito's
+  claim name, not a password.
+- Local run (`make up`): a real PKCE sign-in at the local server, then the backend:
+  anonymous 401; alice and bob each see only their own profile; a signed-in name with no
+  profile gets 401; the log gives the reason and never the token.
+
+### What differs from the design
+
+- Settings are named `issuer_url` and `app_client_id` in code (names with "token" set
+  off the password linter).
+- Without a token, an unknown `/api/...` path now answers 401 instead of 404: anonymous
+  callers cannot learn which API paths exist. Signed in, it is still the JSON 404.
+  `scripts/smoke.sh` changes in pull request 3 to match.
+- Local only: the mock server stamps `token_use: access` on its ID tokens too, so locally
+  an ID token is accepted. Cognito's are refused (unit test).
+
+### Notes for later pull requests
+
+- PR 2 (frontend): `oidc-client-ts` reads `/api/v1/auth/config`; callback path
+  `/auth/callback`; scope `openid email`.
+- PR 3 (Terraform): Lambda needs `dynamodb:GetItem` on the table and the three
+  `COGNITO_*` settings; smoke test: unknown API path 401, `/me` 401 without a token.

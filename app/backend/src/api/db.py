@@ -5,7 +5,7 @@ USER#<user id>, and the user id always comes from the verified token (SR-20), ne
 from the request. No function here takes a key from outside.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import boto3
 from botocore.config import Config
@@ -42,3 +42,18 @@ def get_table(settings: Settings) -> "Table":
 def user_pk(user_id: str) -> str:
     """Partition key: all of one user's items live under it."""
     return f"USER#{user_id}"
+
+
+PROFILE_SK = "PROFILE"
+
+
+class DynamoProfileStore:
+    """Reads profile items (I-08: PK=USER#<id>, SK=PROFILE). One small read per request
+    (ADR-0003 decision 4); it also proves the account still exists (SR-03)."""
+
+    def __init__(self, table: "Table") -> None:
+        self._table = table
+
+    def get(self, user_id: str) -> dict[str, Any] | None:
+        item = self._table.get_item(Key={"PK": user_pk(user_id), "SK": PROFILE_SK}).get("Item")
+        return dict(item) if item else None

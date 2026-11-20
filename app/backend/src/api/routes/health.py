@@ -1,4 +1,4 @@
-"""Health check: the only endpoint that needs no sign-in (I-03, SR-01)."""
+"""Health check: needs no sign-in (I-03, SR-01; listed in api/auth.py OPEN_API_ROUTES)."""
 
 from fastapi import FastAPI
 

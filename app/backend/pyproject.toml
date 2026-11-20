@@ -12,6 +12,8 @@ dependencies = [
     "uvicorn==0.54.0",
     "pydantic-settings==2.16.2",
     "boto3==1.43.126",
+    # Checks the sign-in tokens (B4-02, ADR-0003). The crypto extra adds RS256 support.
+    "pyjwt[crypto]==2.15.1",
 ]
 
 [dependency-groups]
