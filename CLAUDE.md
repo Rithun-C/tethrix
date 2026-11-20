@@ -298,3 +298,9 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 - 2026-11-20: B4 (Auth) design approved with all recommendations
   (`docs/bolts/B4-auth.md`). Four pull requests: (1) backend and local sign-in,
   (2) frontend, (3) Terraform and user accounts, (4) theory and closing.
+- 2026-11-20: B4 pull request 1 written on branch `b4/backend` (on top of `b3/close`):
+  token checks in `api/auth.py`, routes protected by default, `GET /api/v1/me`,
+  `GET /api/v1/auth/config`, profile check, two-user harness, local OIDC server
+  (`mock-oauth2-server` 6.1.4) in Compose, `scripts/local-token.py`,
+  `make guard-local-auth`. 118 backend tests pass. Build notes in
+  `docs/bolts/B4-auth.md` section 11.

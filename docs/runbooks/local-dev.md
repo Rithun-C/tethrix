@@ -34,6 +34,7 @@ flowchart LR
 | `backend` | Our FastAPI app, restarting itself when a file in `app/backend/src` changes | http://localhost:8080 |
 | `dynamodb` | DynamoDB Local | http://localhost:8000 |
 | `db-init` | Creates the table and the seed data, then stops | none |
+| `oidc` | The local stand-in for Cognito (`mock-oauth2-server`). Its sign-in page asks only for a user name | http://localhost:8090 |
 
 The browser only ever talks to `localhost:5173`. Requests to `/api/...` are passed on to
 the backend by Vite, the same way CloudFront will do it in AWS.
@@ -56,6 +57,25 @@ the backend by Vite, the same way CloudFront will do it in AWS.
    app). Each line is one JSON object. Find the one with `"message": "request"`.
 5. See what is running: `make ps`.
 6. Stop: `make down`.
+
+## Signing in locally
+
+Since B4 every API route except health and `/api/v1/auth/config` needs a sign-in.
+Locally the sign-in goes to the `oidc` container instead of Cognito: same flow (code with
+PKCE), same token checks in the backend, but the sign-in page only asks for a user name.
+
+- Type `alice` or `bob`: the two seed users, each with a profile.
+- Any other name signs in at the server but the backend answers 401: there is no profile
+  for it. That is the deleted-account check (SR-03) working.
+- The frontend sign-in arrives in B4 pull request 2. Until then, get a token by hand:
+
+  ```sh
+  TOKEN=$(scripts/local-token.py alice)
+  curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/me
+  ```
+
+The backend runs with `AUTH_MODE=local` (set in `compose.yaml`). In Lambda the app
+refuses to start with that setting (SR-06).
 
 ## The local database
 
@@ -128,6 +148,8 @@ An editor that wants them for autocompletion can get a local copy with
 | `ENOENT ... mkdir '/app/node_modules/.vite-temp'` | Vite was started without `--configLoader runner`. The container's file system is read-only; use the `make` targets or the `npm run` scripts, which pass the flag |
 | A code change does not show | `make logs` and look for a reload line or a Python error |
 | `uv sync` fails with "lockfile needs to be updated" | `pyproject.toml` was changed without `make lock` |
+| Every signed-in request answers 401 after restarting only `oidc` | The local server makes new signing keys at each start, and the backend keeps the old ones. `make down && make up` |
+| `make lint` fails with "Local-only settings found in Terraform" | A `.tf` file sets `AUTH_MODE`, `LOCAL_OIDC_*` or `DYNAMODB_ENDPOINT_URL`. Remove it: those are laptop-only |
 
 ## Undo
 

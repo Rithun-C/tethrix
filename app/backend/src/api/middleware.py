@@ -32,6 +32,11 @@ def _path_template(scope: Scope) -> str:
     return path if isinstance(path, str) else "unmatched"
 
 
+def _user_id(scope: Scope) -> str | None:
+    user = (scope.get("state") or {}).get("user")
+    return getattr(user, "user_id", None)
+
+
 def _where(exc: BaseException) -> list[str]:
     """Code locations of a crash, without the exception's message.
 
@@ -94,5 +99,8 @@ class RequestLogMiddleware:
                     "path": _path_template(scope),
                     "status": status,
                     "duration_ms": round((time.perf_counter() - started) * 1000, 1),
+                    # Who, for an audit trail: the user ID from a checked token (never
+                    # the token itself, SR-44). Absent on open routes and refusals.
+                    "user_id": _user_id(scope),
                 },
             )

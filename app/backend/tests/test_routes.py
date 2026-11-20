@@ -1,23 +1,31 @@
-"""SR-01: every route except health needs a sign-in.
+"""SR-01: every API route except the open ones needs a sign-in.
 
-There is no sign-in yet (B4), so for now the only allowed route is health. This test
-fails when a route is added, which forces the question "is it protected?" each time.
-From B4 the test changes to: call every route without a token and expect 401.
+Two tests work together:
+- test_every_route_is_known: adding a route makes it fail until the route is listed
+  here, which forces the question "should this be open?" each time.
+- test_every_protected_route_refuses_anonymous_calls: calls every route without a token
+  and expects 401. Protection comes from api/auth.py for every route by default, so
+  this only fails if that default is broken or a route is wrongly made open.
 """
 
+import re
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from starlette.routing import Route
 
-OPEN_ROUTES = {
-    ("GET", "/api/v1/health"),
-    # Temporary in B3, removed in B5. Answers only a byte count (routes/echo.py).
+from api.auth import OPEN_API_ROUTES
+
+PROTECTED_ROUTES = {
+    ("GET", "/api/v1/me"),
+    # Temporary, removed in B5. Answers only a byte count (routes/echo.py).
     ("POST", "/api/v1/echo"),
 }
 
 
-def test_only_the_expected_routes_exist(app: FastAPI) -> None:
-    found = {
+def _routes(app: FastAPI) -> set[tuple[str, str]]:
+    return {
         (method, route.path)
         for route in app.routes
         if isinstance(route, Route)
@@ -25,7 +33,32 @@ def test_only_the_expected_routes_exist(app: FastAPI) -> None:
         if method != "HEAD"
     }
 
-    assert found == OPEN_ROUTES
+
+def test_every_route_is_known(app: FastAPI) -> None:
+    assert _routes(app) == OPEN_API_ROUTES | PROTECTED_ROUTES
+
+
+def test_open_routes_are_only_health_and_sign_in_settings() -> None:
+    assert {("GET", "/api/v1/health"), ("GET", "/api/v1/auth/config")} == OPEN_API_ROUTES
+
+
+def _concrete(path: str) -> str:
+    return re.sub(r"\{[^}]+\}", "some-id", path)
+
+
+@pytest.mark.parametrize(("method", "path"), sorted(PROTECTED_ROUTES))
+def test_every_protected_route_refuses_anonymous_calls(
+    client: TestClient, method: str, path: str
+) -> None:
+    response = client.request(method, _concrete(path))
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "unauthorized"
+
+
+def test_all_api_routes_are_covered_by_the_two_lists(app: FastAPI) -> None:
+    api_routes = {route for route in _routes(app) if route[1].startswith("/api/")}
+    assert api_routes <= OPEN_API_ROUTES | PROTECTED_ROUTES
 
 
 def test_docs_pages_are_off(client: TestClient) -> None:

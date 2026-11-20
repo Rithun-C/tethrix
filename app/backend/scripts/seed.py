@@ -15,9 +15,12 @@ from local_table import require_local
 if TYPE_CHECKING:
     from mypy_boto3_dynamodb.service_resource import Table
 
-# Fixed IDs in the same format as a Cognito `sub`, so tests can refer to them.
-ALICE = "11111111-1111-4111-8111-111111111111"
-BOB = "22222222-2222-4222-8222-222222222222"
+# Fixed user IDs, so tests can refer to them. They are the names typed at the local
+# sign-in page (the local OIDC server in Compose uses the typed name as the token's
+# `sub`), so signing in locally as "alice" shows Alice's seed data (B4-05). In AWS the
+# IDs are Cognito's UUIDs; the code treats both the same.
+ALICE = "alice"
+BOB = "bob"
 
 _CREATED = "2026-11-01T09:00:00Z"
 

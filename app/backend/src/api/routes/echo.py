@@ -1,8 +1,8 @@
 """Temporary test endpoint for bolt B3. Removed in B5, when the first real POST exists.
 
-B3 has to prove that a request with a body travels through CloudFront and OAC to Lambda
-(ADR-0002: the browser must send the body's SHA-256 hash). No feature has a POST yet, so
-this route stands in for one.
+B3 had to prove that a request with a body travels through API Gateway and the Web
+Adapter to FastAPI (ADR-0007). No feature has a POST yet, so this route stands in for
+one. Since B4 it needs a sign-in, like every route.
 
 It answers only how many bytes arrived, never the content: whatever is sent cannot come
 back, so it cannot be used to reflect a script into a page (XSS) and nothing is stored.

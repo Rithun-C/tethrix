@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from api.config import Settings
 from api.main import create_app
 from api.static import ASSETS_CACHE, INDEX_CACHE
+from tests.auth_helpers import bearer, install_test_auth, make_token
 
 INDEX = "<!doctype html><title>test app</title>"
 
@@ -24,7 +25,9 @@ def static_dir(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def site(static_dir: Path) -> TestClient:
-    return TestClient(create_app(Settings(log_level="INFO", static_dir=str(static_dir))))
+    app = create_app(Settings(log_level="INFO", static_dir=str(static_dir)))
+    install_test_auth(app)
+    return TestClient(app)
 
 
 def test_root_serves_the_react_app_uncached(site: TestClient) -> None:
@@ -59,8 +62,17 @@ def test_a_missing_asset_is_404_not_the_react_page(site: TestClient) -> None:
 
 
 @pytest.mark.parametrize("path", ["/api/v1/nope", "/api", "/api/v2/health"])
-def test_unknown_api_paths_stay_json_404(site: TestClient, path: str) -> None:
+def test_unknown_api_paths_need_a_sign_in_first(site: TestClient, path: str) -> None:
+    # Anonymous callers cannot even learn which API paths exist.
     response = site.get(path)
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "unauthorized"
+
+
+@pytest.mark.parametrize("path", ["/api/v1/nope", "/api", "/api/v2/health"])
+def test_unknown_api_paths_stay_json_404_when_signed_in(site: TestClient, path: str) -> None:
+    response = site.get(path, headers=bearer(make_token("alice")))
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "not_found"

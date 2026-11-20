@@ -46,7 +46,7 @@ NODE_IMAGE    = $(shell sed -n 's/^FROM \(node:[^ ]*\) AS node-base/\1/p' app/fr
 .DEFAULT_GOAL := help
 .PHONY: help fmt fmt-check validate lint gitleaks gitleaks-staged checkov semgrep \
         semgrep-test trivy scan check hooks sweep up down logs ps reset-db seed openapi \
-        build lock fmt-backend lint-backend test-backend audit-backend hadolint \
+        guard-local-auth build lock fmt-backend lint-backend test-backend audit-backend hadolint \
         image-build image-scan check-backend check-images build-backend build-frontend \
         lock-frontend fmt-frontend lint-frontend test-frontend audit-frontend check-frontend \
         push-backend smoke frontend-dist
@@ -72,7 +72,15 @@ validate: ## terraform validate on every stack, without a backend
 	  terraform -chdir=$$d validate; \
 	done
 
-lint: ## tflint on every stack
+# Guard 2 of the local sign-in (B4-05, SR-06): Terraform must never set the local-only
+# settings, so a deployed function always checks Cognito tokens. The app also refuses to
+# start in Lambda with them (guard 1); this catches the mistake before a deploy.
+guard-local-auth: ## Fail if any Terraform file sets a local-only sign-in setting
+	@if grep -rnE 'AUTH_MODE|LOCAL_OIDC_|DYNAMODB_ENDPOINT_URL' --include='*.tf' infra; then \
+	  echo "Local-only settings found in Terraform (see above)."; exit 1; \
+	else echo "guard-local-auth: no local-only settings in Terraform"; fi
+
+lint: guard-local-auth ## tflint on every stack (and the local sign-in guard)
 	@mkdir -p .cache/tflint
 	$(DOCKER_RUN) -e GITHUB_TOKEN -e TFLINT_PLUGIN_DIR=/src/.cache/tflint \
 	  --entrypoint /bin/sh $(TFLINT_IMAGE) -c '\

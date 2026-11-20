@@ -15,7 +15,7 @@ import pytest
 from boto3.dynamodb.conditions import Key
 
 from api.config import Settings, get_settings
-from api.db import GSI1, dynamodb_resource, user_pk
+from api.db import GSI1, DynamoProfileStore, dynamodb_resource, user_pk
 from local_table import create_table, wait_until_ready
 from seed import ALICE, BOB, seed
 
@@ -85,3 +85,14 @@ def test_index_does_not_copy_fields_it_should_not(table: "Table") -> None:
     assert len(items) == 1
     assert "completedAt" not in items[0]
     assert items[0]["title"] == "Alice: pay the electricity bill"
+
+
+def test_profile_store_reads_only_the_asked_users_profile(table: "Table") -> None:
+    # The store auth_gate uses (SR-03), against the real table shape.
+    profiles = DynamoProfileStore(table)
+
+    alice = profiles.get(ALICE)
+    assert alice is not None
+    assert alice["PK"] == user_pk(ALICE)
+    assert alice["timeZone"] == "Asia/Kolkata"
+    assert profiles.get("nobody") is None

@@ -6,6 +6,8 @@ The frontend handles every error in one place. Messages are fixed texts or built
 field names; they never repeat what the user sent and never show internal details.
 """
 
+from collections.abc import Mapping
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -29,8 +31,10 @@ def error_body(code: str, message: str) -> dict[str, dict[str, str]]:
     return {"error": {"code": code, "message": message}}
 
 
-def error_response(status: int, code: str, message: str) -> JSONResponse:
-    return JSONResponse(status_code=status, content=error_body(code, message))
+def error_response(
+    status: int, code: str, message: str, headers: Mapping[str, str] | None = None
+) -> JSONResponse:
+    return JSONResponse(status_code=status, content=error_body(code, message), headers=headers)
 
 
 async def _http_error(_: Request, exc: Exception) -> JSONResponse:
@@ -39,7 +43,8 @@ async def _http_error(_: Request, exc: Exception) -> JSONResponse:
     if status >= 500:
         return error_response(status, *INTERNAL_ERROR)
     code, message = _KNOWN.get(status, _KNOWN[400])
-    return error_response(status, code, message)
+    # Headers the code set on purpose, such as WWW-Authenticate on a 401, are kept.
+    return error_response(status, code, message, headers=exc.headers)
 
 
 async def _validation_error(_: Request, exc: Exception) -> JSONResponse:

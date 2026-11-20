@@ -81,6 +81,17 @@ they first come up. AWS service names are explained in the bolt where they are f
 | SigV4 | AWS's way of signing a request with credentials, so AWS can check who sent it and that it was not changed. |
 | CORS | Browser rules for calling an API on a different domain. Not needed here because the app and API share one domain. |
 | Cognito user pool | AWS's user directory: stores users and passwords, handles MFA, issues tokens. |
+| App client | The app's entry in the user pool: allowed sign-in flows, callback URLs, token lifetimes. |
+| Hosted sign-in page (classic hosted UI) | Cognito's own sign-in pages. The only hosted option on the Lite plan. |
+| Prefix domain | Cognito's built-in address for its sign-in pages: `<prefix>.auth.<region>.amazoncognito.com`. |
+| Callback URL | Where Cognito may send a user back after sign-in. Anything not on the list is refused. |
+| Issuer (`iss`) | Who signed a token. Ours: the user pool's address. |
+| `kid` | Key ID in a token's header: which of the issuer's keys signed it. |
+| `alg: none` attack | A forged token that claims to need no signature. Refused because only RS256 is accepted. |
+| JWT authorizer | An API Gateway feature that checks a JWT before calling the backend. |
+| Protected by default | Every API route needs a sign-in unless it is on a short, reviewed list of open routes. |
+| Two-user harness | Tests that sign in as two users (alice, bob) and prove one cannot reach the other's data. |
+| OIDC server (local) | A program that issues sign-in tokens. Locally `mock-oauth2-server` stands in for Cognito. |
 | JWT | JSON Web Token. A signed piece of JSON saying who you are and until when. |
 | Access token / refresh token | The short-lived JWT the API checks / the longer-lived token used to get a new access token. |
 | JWKS | The public keys Cognito publishes, used to check a JWT's signature. |

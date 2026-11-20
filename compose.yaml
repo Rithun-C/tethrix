@@ -20,6 +20,13 @@ x-backend-env: &backend-env
   AWS_ACCESS_KEY_ID: local
   AWS_SECRET_ACCESS_KEY: local
   AWS_DEFAULT_REGION: us-east-1
+  # Sign-in against the local OIDC server below (B4-05). The issuer is the address the
+  # browser uses; the keys are fetched over the Compose network. In Lambda the app
+  # refuses to start with any of these set (SR-06).
+  AUTH_MODE: local
+  LOCAL_OIDC_ISSUER: http://localhost:8090/local
+  LOCAL_OIDC_JWKS_URL: http://oidc:8080/local/jwks
+  LOCAL_OIDC_CLIENT_ID: local-app
   # Tool caches go to /tmp, the only writable place.
   RUFF_CACHE_DIR: /tmp/ruff
   MYPY_CACHE_DIR: /tmp/mypy
@@ -53,6 +60,23 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
 
+  # The local stand-in for Cognito (B4-05). Its sign-in page asks only for a user name:
+  # type alice or bob (the seed users). It issues tokens with the same claims as
+  # Cognito (token_use, client_id), through the same PKCE flow, so the frontend code is
+  # identical locally and in AWS. It makes new signing keys at every start: after
+  # restarting it, restart the backend too (`make down && make up`).
+  oidc:
+    image: ghcr.io/navikt/mock-oauth2-server:6.1.4@sha256:647dd8c78a54f0e6fcd58d79c884e612f8f998a0662276f3e1db22e464a50192
+    <<: *hardening
+    environment:
+      JSON_CONFIG: >-
+        {"interactiveLogin": true,
+         "tokenCallbacks": [{"issuerId": "local", "tokenExpiry": 3600,
+           "requestMappings": [{"requestParam": "grant_type", "match": "*",
+             "claims": {"token_use": "access", "client_id": "$${clientId}", "scope": "openid email"}}]}]}
+    ports:
+      - "127.0.0.1:8090:8080"
+
   # Runs once at start: creates the table (I-08) and the seed data, then exits.
   db-init:
     build: &backend-build
@@ -83,6 +107,8 @@ services:
     depends_on:
       db-init:
         condition: service_completed_successfully
+      oidc:
+        condition: service_started
 
   frontend:
     build:

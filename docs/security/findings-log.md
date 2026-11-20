@@ -22,6 +22,7 @@ Status: Open, Fixed, Accepted (give the reason), False positive.
 | 2026-11-20 | B3 pull request 1: `make check` | Whole repo and both images; backend image now includes the Web Adapter | checkov 343 | 0 after fixes | - | 6 nginx CVEs in the frontend base image, fixed by moving to 1.31.7 (F-020) | None kept |
 | 2026-11-20 | B3 pull request 2: `make check` with the app stack | Whole repo; `infra/app` with three new modules | checkov Terraform 161 passed, 36 skipped | 0 after fixes | - | checkov CKV_AWS_259 (HSTS) fixed for `includeSubDomains`, skipped for `preload`; the rest accepted as F-021 | None kept |
 | 2026-11-20 | B3 API Gateway change: `make check` | Whole repo; `infra/app` without CloudFront, with API Gateway; backend image with the React files | tflint, checkov, Trivy, Semgrep pass | 0 new | - | checkov CKV_AWS_309 (route without authorizer) skipped with reason: sign-in is checked in FastAPI from B4 (ADR-0003) | None kept |
+| 2026-11-20 | B4 pull request 1: `make check` | Whole repo; backend with PyJWT, local OIDC server in Compose | All scanners pass | 0 new | - | ruff S105/S106 on Cognito's `token_use` claim name: false positive, marked inline | None kept |
 
 ## Findings
 
