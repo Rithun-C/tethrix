@@ -146,6 +146,8 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | 2026-11-20 | Lambda concurrency: account limit is 10, so no reservation is possible; the account limit is the cap (SR-72) |
 | 2026-11-20 | `satrix.in` is on hold at GoDaddy (identity check failing). B3 deploys on the default address first; Terraform switch `use_custom_domain` stays false until the hold is lifted (ADR-0006 update) |
 | 2026-11-20 | CloudFront refused (account needs a payment method and the Paid plan, per AWS Support). Stay on the Free plan: API Gateway HTTP API in front of Lambda, FastAPI serves the React files and security headers, no function URL, no frontend bucket (ADR-0007 Accepted, ADR-0002 superseded, F-023). CloudFront may return later through a new ADR, never through the Paid plan |
+| 2026-11-20 | B3 closed (smoke 17 passed). B3-09 and B3-10 theory deferred: the owner writes them at the end of the project, from memory |
+| 2026-11-20 | B4 design approved with all recommendations: `Authorization: Bearer`; JWT checked by API Gateway authorizer and FastAPI; Cognito prefix domain (custom domain needs CloudFront); frontend reads auth settings from `GET /api/v1/auth/config`; local OIDC server (`mock-oauth2-server`) in Compose; `make user-create` writes the profile; B4 adds only `GET /me`; echo protected |
 | 2026-11-20 | B3 decisions 9 to 11: body-hash code removed from the frontend; echo route kept until B5; throttling 10 requests a second, bursts of 20 |
 
 ## Open decisions
@@ -156,7 +158,6 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | Journal encryption: SSE vs KMS key vs client-side | ADR in bolt B8 |
 | App name | Any time |
 | Switch on `tethrix.satrix.in` (`use_custom_domain = true`) | When GoDaddy lifts the hold on `satrix.in` |
-| Token header: back to `Authorization: Bearer` now that OAC is gone | ADR-0003 update in B4 |
 | CloudFront back in front (only if enabled without the Paid plan) | New ADR, any time |
 
 ## Current status
@@ -291,3 +292,9 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   files and the security headers; body hash removed; `make publish-frontend` gone.
   `make check` passes. Build notes in `docs/bolts/B3-walking-skeleton.md` section 14.
   Next: owner merges, then deploys with `docs/runbooks/deploy-manual.md` steps 3 to 8.
+- 2026-11-20: Owner merged #14 and deployed: app runs on API Gateway, `make smoke` 17
+  passed. B3 closed and approved. B3-09 and B3-10 deferred to the end (owner writes them
+  from memory); B3 journal entry still to write.
+- 2026-11-20: B4 (Auth) design approved with all recommendations
+  (`docs/bolts/B4-auth.md`). Four pull requests: (1) backend and local sign-in,
+  (2) frontend, (3) Terraform and user accounts, (4) theory and closing.

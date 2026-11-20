@@ -94,7 +94,7 @@ Status: Planned (mitigation designed, not built yet), Done, Accepted.
 | ID | Where | Threat | Risk | Mitigation | Verified by | Bolt | Status |
 |---|---|---|---|---|---|---|---|
 | T-001 | API (TB1) | Forged, expired or another app's JWT accepted | High | Full JWT checks: signature via JWKS, RS256 only, issuer, expiry, `token_use`, `client_id` (ADR-0003) | Unit tests with bad tokens | B4 | Planned |
-| T-002 | Lambda (TB2) | Attacker calls Lambda directly, skipping the front door | Medium | No function URL; the only resource policy lets our API Gateway invoke the function (ADR-0007, SR-62) | Terraform review; `make smoke` reaches the app only through API Gateway | B3 | Planned |
+| T-002 | Lambda (TB2) | Attacker calls Lambda directly, skipping the front door | Medium | No function URL; the only resource policy lets our API Gateway invoke the function (ADR-0007, SR-62) | Terraform review; `make smoke` reaches the app only through API Gateway | B3 | Done |
 | T-003 | Sign-in (TB4) | Stolen or guessed password | High | MFA required (TOTP); 14-character passwords; Cognito lockout | Manual test; Cognito settings in Terraform | B4 | Planned |
 | T-004 | Local auth | Local-dev token mode active in AWS | High | Refuses to start in Lambda; never set by Terraform | Unit test | B4 | Planned |
 | T-005 | CI/CD | Another repo or branch assumes the deploy role | High | OIDC trust pinned to this repo and environment | Policy review, Access Analyzer | B6 | Planned |
@@ -127,7 +127,7 @@ Status: Planned (mitigation designed, not built yet), Done, Accepted.
 | T-017 | API errors | Stack traces or internals shown to users | Medium | One error handler; 500 responses carry no details | Unit test | B3 | Planned |
 | T-018 | Data at rest | Stored data read from disks or backups | Low | DynamoDB and S3 encrypted by default; journal encryption ADR | Settings in Terraform | B8 | Planned |
 | T-019 | Export | Export contains another user's data, or its file leaks | Medium | Export built only from the caller's partition; short-lived link if S3 is used | Two-user test | B9 | Planned |
-| T-020 | Browser | Clickjacking or content-type tricks | Low | Security headers: CSP `frame-ancestors 'none'`, `X-Content-Type-Options`, HSTS, `Referrer-Policy` | Header check | B3 | Planned |
+| T-020 | Browser | Clickjacking or content-type tricks | Low | Security headers: CSP `frame-ancestors 'none'`, `X-Content-Type-Options`, HSTS, `Referrer-Policy` | Header check | B3 | Done |
 
 ### Denial of service (including "denial of wallet")
 
@@ -136,7 +136,7 @@ the app down.
 
 | ID | Where | Threat | Risk | Mitigation | Verified by | Bolt | Status |
 |---|---|---|---|---|---|---|---|
-| T-021 | API | Request flood burns credits | Medium | API Gateway throttling (10 a second, bursts of 20) refuses a flood with 429 before Lambda runs (ADR-0007); DynamoDB provisioned capacity caps cost; Lambda concurrency limit; budgets alert | Load test in B11-08 | B3, B11 | Planned |
+| T-021 | API | Request flood burns credits | Medium | API Gateway throttling (10 a second, bursts of 20) refuses a flood with 429 before Lambda runs (ADR-0007); DynamoDB provisioned capacity caps cost; Lambda concurrency limit; budgets alert | Load test in B11-08 | B3, B11 | Partly done (throttling in B3; load test in B11) |
 | T-022 | API | Expensive requests: huge bodies, unbounded lists | Medium | Size limits; pagination (max 50); 10-second Lambda timeout | Unit tests | B5 onward | Planned |
 | T-023 | AWS account | Forgotten lab resources | Medium | Session sweep, emergency runbook, budgets | Done in G-07, G-12, G-13 | Week 0 | Done |
 
@@ -144,7 +144,7 @@ the app down.
 
 | ID | Where | Threat | Risk | Mitigation | Verified by | Bolt | Status |
 |---|---|---|---|---|---|---|---|
-| T-024 | Lambda role (TB3) | Code bug used to do more than the app needs | Medium | Lambda role allows only the needed DynamoDB actions on our table ARN; no `*` | Access Analyzer `validate-policy` | B3 | Planned |
+| T-024 | Lambda role (TB3) | Code bug used to do more than the app needs | Medium | Lambda role allows only the needed DynamoDB actions on our table ARN; no `*` | Access Analyzer `validate-policy` | B3 | Done |
 | T-025 | CI/CD | Deploy role does more than deploy | High | Separate read-only plan role and apply role; scoped actions | Access Analyzer, review | B6 | Planned |
 | T-026 | Admin user | Admin login stolen | High | MFA, no access keys, `aws login` temporary credentials (ADR-0005) | Prowler | G-04 | Done |
 | T-027 | Sessions | A signed-out user's access token still works | Low | Lifetime 60 minutes; account deletion is enforced by the profile check | Unit test | B4 | Accepted (max 60 minutes) |
@@ -152,13 +152,13 @@ the app down.
 | T-029 | Local dev | Local dev services reachable from the network; DynamoDB Local has no sign-in | Low | Every Compose port bound to `127.0.0.1`; seed data is made up; real data never local | Review of `compose.yaml` | B2 | Done |
 | T-030 | Images | A secret or private file is baked into an image layer | Medium | Allow-list `.dockerignore`; no secrets as build arguments; Trivy secret scan of the built image in CI | CI gate (`make image-scan`) | B2 | Done |
 | T-031 | Containers | A compromised container has more power than the app needs | Low | Non-root user, read-only file system, all capabilities dropped, `no-new-privileges`, final image without build tools | hadolint, checkov; review | B2 | Done |
-| T-032 | DNS | Subdomain takeover: the Route 53 zone is deleted while the NS records for `tethrix` still exist at `satrix.in`, and someone else claims the name | Medium | Destroy order in the runbook: NS records at the parent are removed first; CAA record allows only Amazon to issue certificates | Runbook `deploy-manual.md`, "Undo" | B3 | Planned |
-| T-033 | API | The API is public with no sign-in until B4 | Low | Only health and the byte-count echo exist; no data; body limit, 10 s timeout, account concurrency limit, budgets | `make smoke`; route list test | B3 | Planned |
-| T-034 | Images | A wrong or vulnerable image reaches Lambda | Medium | Trivy scan of the exact image before push; immutable tags tied to commit IDs; push refused with uncommitted changes; ECR scan on push | `make push-backend` | B3 | Planned |
+| T-032 | DNS | Subdomain takeover: the Route 53 zone is deleted while the NS records for `tethrix` still exist at `satrix.in`, and someone else claims the name | Medium | Destroy order in the runbook: NS records at the parent are removed first; CAA record allows only Amazon to issue certificates | Runbook `deploy-manual.md`, "Undo" | B3 | Planned (when the domain is on) |
+| T-033 | API | The API is public with no sign-in until B4 | Low | Only health and the byte-count echo exist; no data; body limit, 10 s timeout, account concurrency limit, budgets | `make smoke`; route list test | B3 | Planned (closes in B4) |
+| T-034 | Images | A wrong or vulnerable image reaches Lambda | Medium | Trivy scan of the exact image before push; immutable tags tied to commit IDs; push refused with uncommitted changes; ECR scan on push | `make push-backend` | B3 | Done |
 | T-036 | Transport | While the app is on the default `execute-api` address, TLS settings are AWS's defaults, not our TLS 1.2 policy | Low | Temporary (ADR-0006 update, ADR-0007): ends when the custom domain with `TLS_1_2` is switched on and the default address is turned off. Browsers negotiate TLS 1.3; HSTS keeps them on HTTPS | `make smoke` runs the TLS 1.1 check once the domain is on | B3 | Accepted (until the domain) |
-| T-035 | Frontend files | The React files are changed or other files are read | Medium | No bucket any more (ADR-0007): the files are inside the immutable, scanned backend image in ECR. Only the admin can push images | Image scan on push; tags immutable | B3 | Planned |
-| T-037 | Static files | Path traversal through static file serving (`/assets/../../etc/passwd`) reads files from the container | Medium | Starlette `StaticFiles` refuses paths outside its folder; read-only file system in Lambda; no secrets in the image (T-030) | `tests/test_static.py` (three encodings); `make smoke` | B3 | Planned |
-| T-038 | Transport | The default `execute-api` address bypasses the custom domain and its TLS policy | Low | `disable_execute_api_endpoint` follows `use_custom_domain` | `make smoke` checks the default address is off once the domain is on | B3 | Planned |
+| T-035 | Frontend files | The React files are changed or other files are read | Medium | No bucket any more (ADR-0007): the files are inside the immutable, scanned backend image in ECR. Only the admin can push images | Image scan on push; tags immutable | B3 | Done |
+| T-037 | Static files | Path traversal through static file serving (`/assets/../../etc/passwd`) reads files from the container | Medium | Starlette `StaticFiles` refuses paths outside its folder; read-only file system in Lambda; no secrets in the image (T-030) | `tests/test_static.py` (three encodings); `make smoke` | B3 | Done |
+| T-038 | Transport | The default `execute-api` address bypasses the custom domain and its TLS policy | Low | `disable_execute_api_endpoint` follows `use_custom_domain` | `make smoke` checks the default address is off once the domain is on | B3 | Planned (when the domain is on) |
 
 ## 5. Summary
 
@@ -168,7 +168,8 @@ the app down.
 | Already done (Week 0) | | | | 4 |
 | Done in B1 (T-008 in part, T-016, T-028) | | | | 3 |
 | Done in B2 (T-029, T-030, T-031) | | | | 3 |
-| Added in B3, done after the first deploy (T-032 to T-035, T-037, T-038) | | | | 0 |
+| Done in B3 after the deploy (T-002, T-020, T-024, T-034, T-035, T-037; T-021 in part) | | | | 6 |
+| Added in B3, waiting for the domain (T-032, T-038) or B4 (T-033) | | | | 0 |
 | Accepted in B3 until the custom domain (T-036) | | | | 1 |
 | Accepted with reason | | | | 2 |
 
@@ -186,5 +187,6 @@ logs (T-014), JWT checks (T-001), supply chain (T-008) and the CI deploy role (T
 | 2026-11-15 | B2, pull request 2 | T-008: npm audit now runs in CI and npm install scripts are off, so every planned control is in place. No new threats from the frontend skeleton: it has no user input and no stored data yet |
 | 2026-11-15 | B2, pull request 3 | Reviewed for the kind lab: no new threats. The cluster exists only on the laptop for the length of the lab, holds made-up data and is reached only through a port-forward on localhost. The lab practises the T-031 controls in Kubernetes form (Pod Security "restricted", network policies). Manifests are now scanned by checkov |
 | 2026-11-20 | B3, pull requests 1 and 2 | T-032 to T-035 added (subdomain takeover, public API before sign-in, image supply, frontend bucket). The custom domain (ADR-0006) removes the old-TLS gap that the design had expected. T-002, T-020, T-021, T-024 controls written in Terraform; they move to Done when `make smoke` passes after the deploy |
+| 2026-11-20 | B3 closed | Deployed on API Gateway, `make smoke` 17 passed. T-002, T-020, T-024, T-034, T-035, T-037 Done; T-021 done for B3 (throttling), load test in B11. T-033 closes with sign-in in B4. T-032 and T-038 wait for the custom domain |
 | 2026-11-20 | B3, API Gateway (ADR-0007) | CloudFront is not enabled for this account, so API Gateway is the front door and FastAPI serves the React files. T-002 (no function URL), T-021 (throttling), T-035 (no bucket), T-036 (default execute-api address) rewritten; T-037 (path traversal) and T-038 (default address bypass) added |
 | 2026-11-20 | B3, default-domain fallback | The parent domain is on hold, so B3 deploys on the `*.cloudfront.net` address first. T-036 added and accepted until the domain is switched on. T-032 applies only once the domain is on |

@@ -1,7 +1,8 @@
 # Bolt B3: Walking skeleton
 
-- Status: Design approved 2026-11-20 with all recommendations, plus the owner's custom
-  domain `tethrix.satrix.in` (ADR-0006; DNS hosting waits for confirmation, decision 8)
+- Status: Done, approved by the owner 2026-11-20. Deployed on API Gateway (ADR-0007),
+  `make smoke` 17 passed. Theory B3-09 and B3-10 deferred: the owner writes them at the
+  end of the project, from memory
 - Date: 2026-11-20
 - Tasks: B3-01 to B3-10
 - AWS cost: about 0.55 USD a month (section 7). No hourly services.
@@ -542,3 +543,15 @@ Not checked, because Claude has no AWS access:
   CloudFront leftovers. Step 4 of the runbook says what the plan should show.
 - What the default `execute-api` address accepts for TLS; `make smoke` reports it as
   INFO while the domain is off.
+
+## 15. Closing (2026-11-20)
+
+- Deployed from `main` at `97e3d10` on the default `execute-api` address. `make smoke`:
+  17 passed, 0 failed. The owner checked the app in the browser: works as expected.
+- Tasks B3-01 to B3-08 Done.
+- B3-09 (CloudFront, OAC, SigV4, API Gateway) and B3-10 (VPC, NAT Gateway) are deferred
+  on purpose: the owner writes them at the end of the project, to test what they
+  remember. Tracked as owner tasks.
+- Still open, not blocking: switching on `tethrix.satrix.in` when the registrar lifts
+  its hold (runbook "Adding the domain"); T-032 and T-038 close then.
+- Owner's journal entry for B3 to write.
