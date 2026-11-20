@@ -16,7 +16,7 @@ variable "region" {
 }
 
 variable "use_custom_domain" {
-  description = "Serve the app on domain_name (ADR-0006). false = the default *.cloudfront.net address, with no Route 53 zone or certificate."
+  description = "Serve the app on domain_name (ADR-0006). false = API Gateway's own execute-api address, with no Route 53 zone or certificate."
   type        = bool
   # false since 2026-11-20: the registrar has the parent domain on hold (clientHold), so
   # it cannot be delegated yet. Set to true once `dig +short NS satrix.in` answers again,

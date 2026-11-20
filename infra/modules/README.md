@@ -7,7 +7,7 @@ in code: inputs (variables) go in, resources are created, outputs come back.
 |---|---|---|
 | [ecr_repository](ecr_repository/README.md) | Private ECR repository, immutable tags, scan on push, lifecycle rule | B3 |
 | [dynamodb_table](dynamodb_table/README.md) | The app's single table from I-08 | B3 |
-| [lambda_container_api](lambda_container_api/README.md) | Container Lambda with its role, log group and an `AWS_IAM` function URL | B3 |
+| [lambda_container_api](lambda_container_api/README.md) | Container Lambda with its role and log group; no public address of its own | B3 |
 
 ## Rules for every module
 
@@ -27,9 +27,9 @@ in code: inputs (variables) go in, resources are created, outputs come back.
 ## How a stack calls a module
 
 ```hcl
-module "frontend_bucket" {
-  source = "../modules/private-bucket"
-  name   = "${var.project}-frontend"
+module "ecr" {
+  source = "../modules/ecr_repository"
+  name   = "${var.project}-backend"
 }
 ```
 

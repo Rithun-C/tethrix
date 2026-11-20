@@ -94,7 +94,7 @@ Status: Planned (mitigation designed, not built yet), Done, Accepted.
 | ID | Where | Threat | Risk | Mitigation | Verified by | Bolt | Status |
 |---|---|---|---|---|---|---|---|
 | T-001 | API (TB1) | Forged, expired or another app's JWT accepted | High | Full JWT checks: signature via JWKS, RS256 only, issuer, expiry, `token_use`, `client_id` (ADR-0003) | Unit tests with bad tokens | B4 | Planned |
-| T-002 | Function URL (TB2) | Attacker calls Lambda directly, skipping CloudFront | Medium | Function URL `AWS_IAM` + OAC; resource policy allows only our distribution (ADR-0002) | Negative test: direct call returns 403 | B3 | Planned |
+| T-002 | Lambda (TB2) | Attacker calls Lambda directly, skipping the front door | Medium | No function URL; the only resource policy lets our API Gateway invoke the function (ADR-0007, SR-62) | Terraform review; `make smoke` reaches the app only through API Gateway | B3 | Planned |
 | T-003 | Sign-in (TB4) | Stolen or guessed password | High | MFA required (TOTP); 14-character passwords; Cognito lockout | Manual test; Cognito settings in Terraform | B4 | Planned |
 | T-004 | Local auth | Local-dev token mode active in AWS | High | Refuses to start in Lambda; never set by Terraform | Unit test | B4 | Planned |
 | T-005 | CI/CD | Another repo or branch assumes the deploy role | High | OIDC trust pinned to this repo and environment | Policy review, Access Analyzer | B6 | Planned |
@@ -136,7 +136,7 @@ the app down.
 
 | ID | Where | Threat | Risk | Mitigation | Verified by | Bolt | Status |
 |---|---|---|---|---|---|---|---|
-| T-021 | API | Request flood burns credits | Medium | DynamoDB provisioned capacity caps cost; Lambda concurrency limit; budgets alert; WAF rate rule tried in lab | Load test in B11-08 | B3, B11 | Planned |
+| T-021 | API | Request flood burns credits | Medium | API Gateway throttling (10 a second, bursts of 20) refuses a flood with 429 before Lambda runs (ADR-0007); DynamoDB provisioned capacity caps cost; Lambda concurrency limit; budgets alert | Load test in B11-08 | B3, B11 | Planned |
 | T-022 | API | Expensive requests: huge bodies, unbounded lists | Medium | Size limits; pagination (max 50); 10-second Lambda timeout | Unit tests | B5 onward | Planned |
 | T-023 | AWS account | Forgotten lab resources | Medium | Session sweep, emergency runbook, budgets | Done in G-07, G-12, G-13 | Week 0 | Done |
 
@@ -155,18 +155,20 @@ the app down.
 | T-032 | DNS | Subdomain takeover: the Route 53 zone is deleted while the NS records for `tethrix` still exist at `satrix.in`, and someone else claims the name | Medium | Destroy order in the runbook: NS records at the parent are removed first; CAA record allows only Amazon to issue certificates | Runbook `deploy-manual.md`, "Undo" | B3 | Planned |
 | T-033 | API | The API is public with no sign-in until B4 | Low | Only health and the byte-count echo exist; no data; body limit, 10 s timeout, account concurrency limit, budgets | `make smoke`; route list test | B3 | Planned |
 | T-034 | Images | A wrong or vulnerable image reaches Lambda | Medium | Trivy scan of the exact image before push; immutable tags tied to commit IDs; push refused with uncommitted changes; ECR scan on push | `make push-backend` | B3 | Planned |
-| T-036 | Transport | While the app is on the default `*.cloudfront.net` address, CloudFront also accepts TLS 1.0 and 1.1 | Low | Temporary (ADR-0006 update): ends when the custom domain is switched on. Browsers negotiate TLS 1.3; HSTS keeps them on HTTPS | `make smoke` runs the TLS 1.1 check once the domain is on | B3 | Accepted (until the domain) |
-| T-035 | Frontend bucket | The bucket is read directly or its files are changed | Medium | Bucket private, OAC with `AWS:SourceArn`, TLS-only policy, public access blocked, only the admin can write | `make smoke` (direct read gives 403) | B3 | Planned |
+| T-036 | Transport | While the app is on the default `execute-api` address, TLS settings are AWS's defaults, not our TLS 1.2 policy | Low | Temporary (ADR-0006 update, ADR-0007): ends when the custom domain with `TLS_1_2` is switched on and the default address is turned off. Browsers negotiate TLS 1.3; HSTS keeps them on HTTPS | `make smoke` runs the TLS 1.1 check once the domain is on | B3 | Accepted (until the domain) |
+| T-035 | Frontend files | The React files are changed or other files are read | Medium | No bucket any more (ADR-0007): the files are inside the immutable, scanned backend image in ECR. Only the admin can push images | Image scan on push; tags immutable | B3 | Planned |
+| T-037 | Static files | Path traversal through static file serving (`/assets/../../etc/passwd`) reads files from the container | Medium | Starlette `StaticFiles` refuses paths outside its folder; read-only file system in Lambda; no secrets in the image (T-030) | `tests/test_static.py` (three encodings); `make smoke` | B3 | Planned |
+| T-038 | Transport | The default `execute-api` address bypasses the custom domain and its TLS policy | Low | `disable_execute_api_endpoint` follows `use_custom_domain` | `make smoke` checks the default address is off once the domain is on | B3 | Planned |
 
 ## 5. Summary
 
 | | High | Medium | Low | Total |
 |---|---|---|---|---|
-| Threats | 11 | 16 | 9 | 36 |
+| Threats | 11 | 17 | 10 | 38 |
 | Already done (Week 0) | | | | 4 |
 | Done in B1 (T-008 in part, T-016, T-028) | | | | 3 |
 | Done in B2 (T-029, T-030, T-031) | | | | 3 |
-| Added in B3, done after the first deploy (T-032 to T-035) | | | | 0 |
+| Added in B3, done after the first deploy (T-032 to T-035, T-037, T-038) | | | | 0 |
 | Accepted in B3 until the custom domain (T-036) | | | | 1 |
 | Accepted with reason | | | | 2 |
 
@@ -184,4 +186,5 @@ logs (T-014), JWT checks (T-001), supply chain (T-008) and the CI deploy role (T
 | 2026-11-15 | B2, pull request 2 | T-008: npm audit now runs in CI and npm install scripts are off, so every planned control is in place. No new threats from the frontend skeleton: it has no user input and no stored data yet |
 | 2026-11-15 | B2, pull request 3 | Reviewed for the kind lab: no new threats. The cluster exists only on the laptop for the length of the lab, holds made-up data and is reached only through a port-forward on localhost. The lab practises the T-031 controls in Kubernetes form (Pod Security "restricted", network policies). Manifests are now scanned by checkov |
 | 2026-11-20 | B3, pull requests 1 and 2 | T-032 to T-035 added (subdomain takeover, public API before sign-in, image supply, frontend bucket). The custom domain (ADR-0006) removes the old-TLS gap that the design had expected. T-002, T-020, T-021, T-024 controls written in Terraform; they move to Done when `make smoke` passes after the deploy |
+| 2026-11-20 | B3, API Gateway (ADR-0007) | CloudFront is not enabled for this account, so API Gateway is the front door and FastAPI serves the React files. T-002 (no function URL), T-021 (throttling), T-035 (no bucket), T-036 (default execute-api address) rewritten; T-037 (path traversal) and T-038 (default address bypass) added |
 | 2026-11-20 | B3, default-domain fallback | The parent domain is on hold, so B3 deploys on the `*.cloudfront.net` address first. T-036 added and accepted until the domain is switched on. T-032 applies only once the domain is on |

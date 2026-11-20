@@ -1,29 +1,33 @@
 #!/usr/bin/env bash
-# Smoke and negative tests for the deployed app (B3-07, B3-08).
+# Smoke and negative tests for the deployed app (B3-07, B3-08; ADR-0007).
 #
 # Checks from the outside, like a visitor or an attacker would, that:
-#   - the site and the API answer through CloudFront, with the security headers
-#   - a request body travels with its SHA-256 hash (ADR-0002)
-#   - every way around CloudFront is closed (function URL, bucket, plain HTTP, old TLS)
+#   - the page, its files and the API answer, with the security headers
+#   - caching is right: files for a year, index.html never
+#   - request bodies arrive, and oversized ones are refused
+#   - the side doors are closed (other files, plain HTTP, old TLS, the default address
+#     once the custom domain is on)
 #
-# Needs no AWS credentials: it only sends HTTP requests. `make smoke` passes the
-# function URL and bucket name from the Terraform outputs.
+# Needs no AWS credentials: it only sends HTTP requests. `make smoke` passes the two
+# host names from the Terraform outputs.
 #
-# Usage: scripts/smoke.sh DOMAIN FUNCTION_URL BUCKET
-# DOMAIN is the host name only: tethrix.satrix.in, or the *.cloudfront.net address.
+# Usage: scripts/smoke.sh APP_HOST API_HOST
+#   APP_HOST  where the app is served: tethrix.satrix.in, or the execute-api host name
+#   API_HOST  API Gateway's own execute-api host name (the same as APP_HOST while the
+#             custom domain is off)
 
 set -uo pipefail
 
-domain="${1:?domain, for example tethrix.satrix.in}"
-function_url="${2:?function URL from terraform output}"
-bucket="${3:?frontend bucket from terraform output}"
-base="https://${domain}"
+app_host="${1:?app host, for example tethrix.satrix.in}"
+api_host="${2:?execute-api host from terraform output}"
+base="https://${app_host}"
 
 passed=0
 failed=0
 
 ok() { echo "PASS  $1"; passed=$((passed + 1)); }
 bad() { echo "FAIL  $1"; failed=$((failed + 1)); }
+info() { echo "INFO  $1"; }
 
 # status URL [curl options...] -> prints the HTTP status code only
 status() { curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$@"; }
@@ -35,64 +39,86 @@ expect_status() { # description expected actual
   if [ "$3" = "$2" ]; then ok "$1 ($3)"; else bad "$1: expected $2, got $3"; fi
 }
 
-sha256() { printf '%s' "$1" | shasum -a 256 | cut -d' ' -f1; }
+has_security_headers() { # description header-file
+  local missing=""
+  for name in strict-transport-security content-security-policy x-content-type-options \
+    x-frame-options referrer-policy; do
+    [ -n "$(header "$name" "$2")" ] || missing="$missing $name"
+  done
+  if [ -z "$missing" ]; then ok "$1 has all security headers"; else bad "$1 is missing:$missing"; fi
+}
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-echo "== Site and API through CloudFront"
+echo "== The app: $base"
 
-code=$(status -D "$tmp/page" "$base/")
+code=$(curl -s -D "$tmp/page" -o "$tmp/page.body" --max-time 15 "$base/" -w '%{http_code}')
 expect_status "home page" 200 "$code"
-for name in strict-transport-security content-security-policy x-content-type-options \
-  x-frame-options referrer-policy; do
-  if [ -n "$(header "$name" "$tmp/page")" ]; then ok "page header $name"; else bad "page header $name missing"; fi
-done
+has_security_headers "home page" "$tmp/page"
+if [ "$(header cache-control "$tmp/page")" = "no-cache" ]; then ok "index.html is never cached"; else bad "index.html cache-control: '$(header cache-control "$tmp/page")'"; fi
 
 expect_status "React route /todos is served by index.html" 200 "$(status "$base/todos")"
+
+asset=$(grep -o '/assets/[^"]*\.js' "$tmp/page.body" | head -1)
+if [ -n "$asset" ]; then
+  code=$(curl -s -D "$tmp/asset" -o /dev/null --max-time 15 "$base$asset" -w '%{http_code}')
+  expect_status "script file $asset" 200 "$code"
+  case "$(header cache-control "$tmp/asset")" in
+    *immutable*) ok "script file is cached for a year" ;;
+    *) bad "script file cache-control: '$(header cache-control "$tmp/asset")'" ;;
+  esac
+else
+  bad "no /assets/*.js link found in the home page"
+fi
+
+echo "== The API"
 
 code=$(curl -s -D "$tmp/api" -o "$tmp/api.body" --max-time 15 "$base/api/v1/health" -w '%{http_code}')
 expect_status "API health" 200 "$code"
 if grep -q '"status":"ok"' "$tmp/api.body"; then ok "API health body"; else bad "API health body: $(cat "$tmp/api.body")"; fi
-if [ -n "$(header content-security-policy "$tmp/api")" ]; then ok "API response has security headers"; else bad "API response has no CSP header"; fi
+has_security_headers "API response" "$tmp/api"
 
 code=$(curl -s -o "$tmp/nope.body" --max-time 15 "$base/api/v1/nope" -w '%{http_code}')
 expect_status "unknown API path" 404 "$code"
 if grep -q '"not_found"' "$tmp/nope.body"; then ok "unknown API path answers in the API error format, not the React page"; else bad "unknown API path body: $(head -c 120 "$tmp/nope.body")"; fi
 
-echo "== Request bodies (ADR-0002)"
-
 body='{"hello":"world"}'
 code=$(curl -s -o "$tmp/echo.body" --max-time 15 -X POST "$base/api/v1/echo" \
-  -H 'Content-Type: application/json' -H "x-amz-content-sha256: $(sha256 "$body")" \
-  --data "$body" -w '%{http_code}')
-expect_status "POST with the body hash" 200 "$code"
+  -H 'Content-Type: application/json' --data "$body" -w '%{http_code}')
+expect_status "POST with a body" 200 "$code"
 if grep -q "\"received_bytes\":${#body}" "$tmp/echo.body"; then ok "echo counted ${#body} bytes"; else bad "echo body: $(cat "$tmp/echo.body")"; fi
 
-code=$(status -X POST "$base/api/v1/echo" -H 'Content-Type: application/json' --data "$body")
-if [ "$code" != "200" ]; then ok "POST without the body hash is refused ($code)"; else bad "POST without the body hash was accepted"; fi
-
 big=$(head -c 17000 /dev/zero | tr '\0' 'x')
-code=$(status -X POST "$base/api/v1/echo" -H "x-amz-content-sha256: $(sha256 "$big")" --data "$big")
-expect_status "17 KB body is over the limit (SR-31)" 413 "$code"
+expect_status "17 KB body is over the limit (SR-31)" 413 "$(status -X POST "$base/api/v1/echo" --data "$big")"
 
-echo "== Ways around CloudFront must be closed"
+echo "== Side doors must be closed"
 
-expect_status "function URL called directly (SR-62)" 403 "$(status "${function_url%/}/api/v1/health")"
-expect_status "bucket read directly" 403 "$(status "https://${bucket}.s3.us-east-1.amazonaws.com/index.html")"
+code=$(status --path-as-is "$base/assets/%2e%2e/%2e%2e/etc/passwd")
+if [ "$code" = "404" ] || [ "$code" = "400" ] || [ "$code" = "403" ]; then ok "path outside the static folder is refused ($code, T-037)"; else bad "path traversal answered $code"; fi
 
-code=$(curl -s -o /dev/null -D "$tmp/http" --max-time 15 "http://${domain}/" -w '%{http_code}')
-location=$(header location "$tmp/http")
-if [ "$code" = "301" ] && [ "${location#https://}" != "$location" ]; then ok "plain HTTP redirects to HTTPS"; else bad "plain HTTP: got $code, location '$location'"; fi
+# API Gateway does not listen on plain HTTP at all, so the connection must fail or be
+# refused; it must never serve the app.
+code=$(status "http://${app_host}/")
+if [ "$code" != "200" ]; then ok "plain HTTP does not serve the app (got '$code')"; else bad "plain HTTP served the app"; fi
 
-if [ "${domain%.cloudfront.net}" != "$domain" ]; then
-  # On the default address AWS fixes the minimum at TLS 1.0 (F-022); only our own domain
-  # and certificate can require TLS 1.2. Reported, not counted as a pass or a failure.
-  echo "SKIP  TLS 1.1 check: default *.cloudfront.net address (F-022, until the custom domain)"
-elif curl -s -o /dev/null --max-time 15 --tlsv1.1 --tls-max 1.1 "$base/" 2>/dev/null; then
-  bad "TLS 1.1 was accepted (SR-50)"
+if curl -s -o /dev/null --max-time 15 --tlsv1.1 --tls-max 1.1 "$base/" 2>/dev/null; then
+  if [ "$app_host" = "$api_host" ]; then
+    # The default address uses AWS's own TLS settings; only our domain has TLS_1_2 set
+    # explicitly. Reported for the record, not counted.
+    info "TLS 1.1 accepted on the default execute-api address (custom domain will require TLS 1.2)"
+  else
+    bad "TLS 1.1 was accepted on the custom domain (SR-50)"
+  fi
 else
   ok "TLS 1.1 is refused (SR-50)"
+fi
+
+if [ "$app_host" != "$api_host" ]; then
+  code=$(status "https://${api_host}/api/v1/health")
+  if [ "$code" != "200" ]; then ok "default execute-api address is switched off ($code, T-038)"; else bad "default execute-api address still answers"; fi
+else
+  info "custom domain is off: the execute-api address is the app's address for now"
 fi
 
 echo

@@ -8,9 +8,9 @@ output "function_arn" {
   value       = aws_lambda_function.this.arn
 }
 
-output "function_url" {
-  description = "The function URL. Not secret, but it only accepts requests signed by CloudFront."
-  value       = aws_lambda_function_url.this.function_url
+output "invoke_arn" {
+  description = "ARN that API Gateway uses to call the function."
+  value       = aws_lambda_function.this.invoke_arn
 }
 
 output "role_name" {

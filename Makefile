@@ -49,7 +49,7 @@ NODE_IMAGE    = $(shell sed -n 's/^FROM \(node:[^ ]*\) AS node-base/\1/p' app/fr
         build lock fmt-backend lint-backend test-backend audit-backend hadolint \
         image-build image-scan check-backend check-images build-backend build-frontend \
         lock-frontend fmt-frontend lint-frontend test-frontend audit-frontend check-frontend \
-        push-backend publish-frontend smoke
+        push-backend smoke frontend-dist
 
 help: ## List the commands
 	@grep -hE '^[a-z-]+:.*## ' Makefile | awk -F ':.*## ' '{printf "  make %-16s %s\n", $$1, $$2}'
@@ -209,8 +209,15 @@ hadolint: ## Lint the Dockerfiles
 	$(DOCKER_RUN) $(HADOLINT_IMAGE) hadolint app/backend/Dockerfile app/frontend/Dockerfile
 
 # Building the frontend "static" image also runs the production build (tsc + vite build).
-image-build: ## Build the images that ship: backend runtime and frontend static
-	$(DOCKER_BUILD) --quiet --target runtime --tag productivity-app-backend:runtime app/backend
+# The React build output, copied out of the frontend image's `dist` stage. The backend
+# runtime image includes it (ADR-0007).
+frontend-dist: ## Build the React files into .cache/frontend-dist
+	@rm -rf .cache/frontend-dist
+	$(DOCKER_BUILD) --quiet --target dist --output type=local,dest=.cache/frontend-dist app/frontend
+
+image-build: frontend-dist ## Build the images that ship: backend runtime (with the React app) and frontend static
+	$(DOCKER_BUILD) --quiet --build-context frontend-dist=.cache/frontend-dist \
+	  --target runtime --tag productivity-app-backend:runtime app/backend
 	$(DOCKER_BUILD) --quiet --target static --tag productivity-app-frontend:static app/frontend
 
 # The image is saved to a file and Trivy scans the file. The other way, giving the Trivy
@@ -252,14 +259,16 @@ AWS_REGION := us-east-1
 # uncommitted changes would be in the image but not in Git. The image is scanned as the
 # exact file that is pushed. --provenance=false --sbom=false: Lambda does not accept the
 # extra attestation entries Docker adds by default.
-push-backend: ## (owner, AWS) Scan, build for arm64 and push the backend image to ECR
+push-backend: ## (owner, AWS) Build the React app into the backend image, scan it, push it to ECR
 	@test -z "$$(git status --porcelain)" || { echo "Commit or stash your changes first: the image tag is the commit ID."; exit 1; }
+	@$(MAKE) --no-print-directory frontend-dist
 	@set -e; \
 	repo=$$($(TF_APP) output -raw ecr_repository_url); \
 	registry=$${repo%%/*}; \
 	tag=$$(git rev-parse HEAD); \
 	echo "== build backend image for commit $$tag"; \
 	$(DOCKER_BUILD) --quiet --platform linux/arm64 --provenance=false --sbom=false \
+	  --build-context frontend-dist=.cache/frontend-dist \
 	  --target runtime --tag "$$repo:$$tag" app/backend; \
 	echo "== trivy: the exact image that will be pushed"; \
 	mkdir -p .cache/images .cache/trivy; \
@@ -274,25 +283,6 @@ push-backend: ## (owner, AWS) Scan, build for arm64 and push the backend image t
 	docker logout "$$registry" >/dev/null; \
 	echo; echo "Pushed. Next step: $(TF_APP) apply -var backend_image_tag=$$tag"
 
-# Assets have content hashes in their names, so they can be cached for a year. index.html
-# must never be cached, or visitors would keep loading old asset names. Assets go up
-# first, so a new index.html never points at files that are not there yet.
-publish-frontend: ## (owner, AWS) Build the React files, upload them to S3, refresh CloudFront
-	@set -e; \
-	bucket=$$($(TF_APP) output -raw frontend_bucket); \
-	distribution=$$($(TF_APP) output -raw distribution_id); \
-	rm -rf .cache/frontend-dist; \
-	echo "== build"; \
-	$(DOCKER_BUILD) --quiet --target dist --output type=local,dest=.cache/frontend-dist app/frontend; \
-	echo "== upload"; \
-	aws s3 sync .cache/frontend-dist "s3://$$bucket" --delete --exclude index.html \
-	  --cache-control "public, max-age=31536000, immutable" --only-show-errors; \
-	aws s3 cp .cache/frontend-dist/index.html "s3://$$bucket/index.html" \
-	  --cache-control "no-cache" --only-show-errors; \
-	echo "== invalidate CloudFront cache"; \
-	aws cloudfront create-invalidation --distribution-id "$$distribution" --paths "/*" \
-	  --query Invalidation.Status --output text
-
 smoke: ## (owner, AWS) Smoke and negative tests against the deployed app
 	@./scripts/smoke.sh "$$($(TF_APP) output -raw app_url | sed 's|https://||')" \
-	  "$$($(TF_APP) output -raw function_url)" "$$($(TF_APP) output -raw frontend_bucket)"
+	  "$$($(TF_APP) output -raw api_endpoint | sed 's|https://||')"

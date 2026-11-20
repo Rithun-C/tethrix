@@ -53,11 +53,11 @@ COPY src ./src
 # Type errors stop the build; then Vite writes the finished site to /app/dist.
 RUN tsc --noEmit && vite build --configLoader runner
 
-# ---- dist: only the built files, for `make publish-frontend` ------------------------
+# ---- dist: only the built files, for `make frontend-dist` ----------------------------
 # An image that holds nothing but the contents of /app/dist. It is never run:
 # `docker build --target dist --output type=local,dest=...` copies the files out to the
-# laptop, which then uploads them to S3. Without this stage, --output would copy the
-# whole build stage, node_modules included.
+# laptop, and the backend image build copies them in (ADR-0007). Without this stage,
+# --output would copy the whole build stage, node_modules included.
 FROM scratch AS dist
 COPY --from=build /app/dist /
 

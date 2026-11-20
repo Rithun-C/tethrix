@@ -1,11 +1,10 @@
 // The one place where the frontend talks to the backend.
 //
-// Every API call goes through apiFetch, so cross-cutting things are added here once:
-// - the SHA-256 of the request body in x-amz-content-sha256 (ADR-0002, see sha256Hex)
-// - B4: the sign-in token in X-Auth-Token (ADR-0003)
+// Every API call goes through apiFetch, so cross-cutting things are added here once,
+// such as the sign-in token from B4 on (ADR-0003, revisited in B4 because of ADR-0007).
 //
 // Paths are relative ("/api/v1/..."). The browser sends them to the address the page
-// came from: the Vite dev server locally, CloudFront in AWS. No backend address is
+// came from: the Vite dev server locally, API Gateway in AWS (ADR-0007). No backend address is
 // ever built into the frontend.
 
 export const API_PREFIX = "/api/v1";
@@ -47,22 +46,6 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-/**
- * The SHA-256 hash of a text, as 64 lowercase hex characters.
- *
- * Why: in AWS, CloudFront signs each API request before passing it to Lambda (OAC), and
- * Lambda only accepts a signed body if the request also carries the body's hash in
- * x-amz-content-sha256. CloudFront does not compute it, so the browser must. The hash
- * is taken over the exact text that is sent. It proves the body was not changed on the
- * way from CloudFront to Lambda; it is not a protection against the user.
- *
- * Locally the header is simply ignored by the backend.
- */
-export async function sha256Hex(text: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
 export interface ApiOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
@@ -76,19 +59,12 @@ export interface ApiOptions {
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const { method = "GET", body, signal } = options;
 
-  // The body is turned into text once, so the hash is computed over exactly what is sent.
-  const text = body === undefined ? undefined : JSON.stringify(body);
-  const headers =
-    text === undefined
-      ? undefined
-      : { "Content-Type": "application/json", "x-amz-content-sha256": await sha256Hex(text) };
-
   let response: Response;
   try {
     response = await fetch(`${API_PREFIX}${path}`, {
       method,
-      headers,
-      body: text,
+      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
       signal: signal ?? null,
     });
   } catch (cause) {

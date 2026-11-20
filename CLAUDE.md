@@ -53,11 +53,11 @@ and a dashboard.
 
 ## Architecture (proposed, confirmed through ADRs)
 
-- Frontend: React build on S3 + CloudFront at `tethrix.satrix.in` (ADR-0006)
-- Backend: FastAPI in a container on Lambda, using AWS Lambda Web Adapter
-- API: CloudFront `/api/*` -> Lambda Function URL locked with Origin Access Control (OAC)
-  - OAC replaces the `Authorization` header, so the JWT travels in a custom header.
-  - POST/PUT need the body SHA-256 in `x-amz-content-sha256`.
+- Front door: API Gateway HTTP API, one catch-all route to Lambda, throttling and access
+  logs (ADR-0007, replaces CloudFront + OAC from ADR-0002: CloudFront is not enabled for
+  this account on the Free plan). Custom domain `tethrix.satrix.in` (ADR-0006) when on
+- Backend: FastAPI in a container on Lambda, using AWS Lambda Web Adapter. It also
+  serves the React build (copied into the image) and sets the security headers
 - Auth: Cognito user pool. FastAPI verifies JWTs.
 - Database: DynamoDB proposed (ADR-0001). RDS PostgreSQL only as a short lab.
 - Files: S3 presigned URLs. Reminders: EventBridge Scheduler + SNS.
@@ -65,7 +65,7 @@ and a dashboard.
 - CI/CD: GitHub Actions with OIDC, no long-lived AWS keys. Public repo.
 - Observability: CloudTrail, CloudWatch, X-Ray.
 
-Theory only: Organizations, SCPs, Control Tower, EKS (Kubernetes practised locally with
+Theory only: CloudFront and OAC (not enabled for this account), Organizations, SCPs, Control Tower, EKS (Kubernetes practised locally with
 kind), NAT Gateway, Transit Gateway, Network Firewall, Shield Advanced, multi-region DR.
 
 ## How we work
@@ -144,7 +144,9 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | 2026-11-20 | The app's domain is `tethrix.satrix.in`, a subdomain of the owner's domain (ADR-0006). Only the subdomain is used by this project |
 | 2026-11-20 | DNS: a Route 53 hosted zone for `tethrix.satrix.in` only, delegated with NS records at the parent's DNS provider (ADR-0006 Accepted) |
 | 2026-11-20 | Lambda concurrency: account limit is 10, so no reservation is possible; the account limit is the cap (SR-72) |
-| 2026-11-20 | `satrix.in` is on hold at GoDaddy (identity check failing). B3 deploys on the default `*.cloudfront.net` address first; Terraform switch `use_custom_domain` stays false until the hold is lifted (ADR-0006 update, F-022) |
+| 2026-11-20 | `satrix.in` is on hold at GoDaddy (identity check failing). B3 deploys on the default address first; Terraform switch `use_custom_domain` stays false until the hold is lifted (ADR-0006 update) |
+| 2026-11-20 | CloudFront refused (account needs a payment method and the Paid plan, per AWS Support). Stay on the Free plan: API Gateway HTTP API in front of Lambda, FastAPI serves the React files and security headers, no function URL, no frontend bucket (ADR-0007 Accepted, ADR-0002 superseded, F-023). CloudFront may return later through a new ADR, never through the Paid plan |
+| 2026-11-20 | B3 decisions 9 to 11: body-hash code removed from the frontend; echo route kept until B5; throttling 10 requests a second, bursts of 20 |
 
 ## Open decisions
 
@@ -154,6 +156,8 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | Journal encryption: SSE vs KMS key vs client-side | ADR in bolt B8 |
 | App name | Any time |
 | Switch on `tethrix.satrix.in` (`use_custom_domain = true`) | When GoDaddy lifts the hold on `satrix.in` |
+| Token header: back to `Authorization: Bearer` now that OAC is gone | ADR-0003 update in B4 |
+| CloudFront back in front (only if enabled without the Paid plan) | New ADR, any time |
 
 ## Current status
 
@@ -279,3 +283,11 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   `*.cloudfront.net` address first. Change written on branch `b3/default-domain`.
 - Local note: this laptop's network needs `BUILD_NETWORK := host` in `local.mk` (git
   ignored) for image builds; see `docs/runbooks/local-dev.md`, "Problems".
+- 2026-11-20: First apply stopped at the CloudFront distribution; AWS Support says
+  CloudFront needs a payment method and the Paid plan for this account. AWS's docs list
+  API Gateway, Route 53 and ACM as Free Tier services. Owner chose API Gateway "for
+  now" (ADR-0007 Accepted). Change written on branch `b3/api-gateway`: CloudFront, S3
+  frontend bucket and function URL removed; `api.tf` added; FastAPI serves the React
+  files and the security headers; body hash removed; `make publish-frontend` gone.
+  `make check` passes. Build notes in `docs/bolts/B3-walking-skeleton.md` section 14.
+  Next: owner merges, then deploys with `docs/runbooks/deploy-manual.md` steps 3 to 8.

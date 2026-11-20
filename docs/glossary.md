@@ -68,7 +68,13 @@ they first come up. AWS service names are explained in the bolt where they are f
 
 | Term | Meaning |
 |---|---|
-| CloudFront | AWS's content delivery network. Serves the React app and forwards `/api/*` to the backend. |
+| CloudFront | AWS's content delivery network. Planned as the front door, but not enabled for this account on the Free plan, so theory only (ADR-0007). |
+| API Gateway (HTTP API) | AWS's managed front door for HTTP requests. Receives each request on HTTPS and hands it to Lambda. Our front door since ADR-0007. |
+| `$default` route / stage | The catch-all route of an HTTP API (every request goes there) / the stage whose address has no stage name in the path. |
+| execute-api address | The address every API Gateway API gets by default: `https://<id>.execute-api.<region>.amazonaws.com`. |
+| Throttling | Refusing requests above a set rate (answer 429) before they reach the backend. |
+| Lambda permission | A rule on a Lambda function saying who may invoke it. Ours allows only our API Gateway. |
+| Path traversal | Using `../` in a path to read files outside the folder a server is meant to serve. |
 | Origin | Where CloudFront fetches content from: the S3 bucket or the Lambda function URL. |
 | Function URL | A built-in HTTPS address for one Lambda function. |
 | OAC | Origin Access Control. CloudFront signs every request to the origin, so the origin can refuse anything that did not come through CloudFront. |
