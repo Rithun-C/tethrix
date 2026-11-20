@@ -146,6 +146,7 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | 2026-11-20 | Lambda concurrency: account limit is 10, so no reservation is possible; the account limit is the cap (SR-72) |
 | 2026-11-20 | `satrix.in` is on hold at GoDaddy (identity check failing). B3 deploys on the default address first; Terraform switch `use_custom_domain` stays false until the hold is lifted (ADR-0006 update) |
 | 2026-11-20 | CloudFront refused (account needs a payment method and the Paid plan, per AWS Support). Stay on the Free plan: API Gateway HTTP API in front of Lambda, FastAPI serves the React files and security headers, no function URL, no frontend bucket (ADR-0007 Accepted, ADR-0002 superseded, F-023). CloudFront may return later through a new ADR, never through the Paid plan |
+| 2026-11-20 | Package cooldown is now 14 days (was 7): add or upgrade only releases at least two weeks old, wait otherwise. Enforced by `exclude-newer = "14 days"` (uv) and `min-release-age=14` (npm). Dependabot alert #1 (minimatch, F-018) waits until 2026-11-30 |
 | 2026-11-20 | B3 closed (smoke 17 passed). B3-09 and B3-10 theory deferred: the owner writes them at the end of the project, from memory |
 | 2026-11-20 | B4 design approved with all recommendations: `Authorization: Bearer`; JWT checked by API Gateway authorizer and FastAPI; Cognito prefix domain (custom domain needs CloudFront); frontend reads auth settings from `GET /api/v1/auth/config`; local OIDC server (`mock-oauth2-server`) in Compose; `make user-create` writes the profile; B4 adds only `GET /me`; echo protected |
 | 2026-11-20 | B3 decisions 9 to 11: body-hash code removed from the frontend; echo route kept until B5; throttling 10 requests a second, bursts of 20 |
@@ -304,3 +305,9 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   (`mock-oauth2-server` 6.1.4) in Compose, `scripts/local-token.py`,
   `make guard-local-auth`. 118 backend tests pass. Build notes in
   `docs/bolts/B4-auth.md` section 11.
+- 2026-11-20: Pull requests #15 (B3 closing) and #16 (B4 PR 1) merged. B4 pull request 2
+  written on branch `b4/frontend`: sign-in with `oidc-client-ts` 3.5.0, callback page,
+  sign-out, 60-minute idle sign-out, tokens in memory and `sessionStorage` only,
+  `Authorization: Bearer` on API calls. Package cooldown raised to 14 days (backend
+  relocked one release back). 60 frontend tests; browser check 15 of 15 against the
+  local stack. Build notes in `docs/bolts/B4-auth.md` section 12.

@@ -46,10 +46,13 @@ Write the answers in the bolt's journal entry.
    almost none deserves a closer look.
 7. Is the licence acceptable? MIT, BSD, Apache-2.0 and ISC are fine. Ask before using
    GPL or AGPL code, or code with no licence.
-8. Is the newest version at least a week old? Most malicious releases are found and
-   removed within days. For Python this is enforced: `exclude-newer = "7 days"` in
-   `app/backend/pyproject.toml` makes uv ignore anything newer when it writes the lockfile.
-   For npm it is `min-release-age=7` in `app/frontend/.npmrc`.
+8. Is the version at least two weeks old? Most malicious releases are found and
+   removed within days; two weeks leaves a margin (owner's decision, 2026-11-20; it was
+   one week before). If a fix is only in a newer release, wait and note the date it
+   becomes usable. This covers Docker images and GitHub Actions too. For Python it is
+   enforced: `exclude-newer = "14 days"` in `app/backend/pyproject.toml` makes uv ignore
+   anything newer when it writes the lockfile. For npm it is `min-release-age=14` in
+   `app/frontend/.npmrc`.
 
 This applies to Claude's suggestions too. An AI model can suggest a package name that
 does not exist, and attackers register such names. Every suggested package is checked

@@ -90,6 +90,8 @@ they first come up. AWS service names are explained in the bolt where they are f
 | `alg: none` attack | A forged token that claims to need no signature. Refused because only RS256 is accepted. |
 | JWT authorizer | An API Gateway feature that checks a JWT before calling the backend. |
 | Protected by default | Every API route needs a sign-in unless it is on a short, reviewed list of open routes. |
+| Silent renew | Getting a new access token in the background with the refresh token, before the old one expires. |
+| Idle sign-out | Signing the user out after a time without clicks or key presses (60 minutes here). |
 | Two-user harness | Tests that sign in as two users (alice, bob) and prove one cannot reach the other's data. |
 | OIDC server (local) | A program that issues sign-in tokens. Locally `mock-oauth2-server` stands in for Cognito. |
 | JWT | JSON Web Token. A signed piece of JSON saying who you are and until when. |
