@@ -1,4 +1,4 @@
-import { ApiError, apiFetch } from "./client";
+import { ApiError, apiFetch, setAuthHooks } from "./client";
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -97,5 +97,70 @@ describe("apiFetch", () => {
     mockFetch(new Response(null, { status: 204 }));
 
     await expect(apiFetch("/todos/t1", { method: "DELETE" })).resolves.toBeUndefined();
+  });
+});
+
+describe("apiFetch with a signed-in user (B4)", () => {
+  afterEach(() => {
+    setAuthHooks(undefined);
+  });
+
+  it("sends the access token as Authorization: Bearer", async () => {
+    setAuthHooks({ accessToken: () => "abc.def.ghi", onUnauthorized: vi.fn() });
+    const fetchMock = mockFetch(jsonResponse(200, { userId: "alice" }));
+
+    await apiFetch("/me");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/me",
+      expect.objectContaining({ headers: { Authorization: "Bearer abc.def.ghi" } }),
+    );
+  });
+
+  it("sends the token together with a JSON body", async () => {
+    setAuthHooks({ accessToken: () => "abc.def.ghi", onUnauthorized: vi.fn() });
+    const fetchMock = mockFetch(jsonResponse(200, {}));
+
+    await apiFetch("/echo", { method: "POST", body: { a: 1 } });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/echo",
+      expect.objectContaining({
+        headers: { "Content-Type": "application/json", Authorization: "Bearer abc.def.ghi" },
+      }),
+    );
+  });
+
+  it("never sends the old X-Auth-Token header", async () => {
+    setAuthHooks({ accessToken: () => "abc.def.ghi", onUnauthorized: vi.fn() });
+    const fetchMock = mockFetch(jsonResponse(200, {}));
+
+    await apiFetch("/me");
+
+    const init = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.stringify(init[1].headers)).not.toContain("X-Auth-Token");
+  });
+
+  it("tells the sign-in code about a 401", async () => {
+    const onUnauthorized = vi.fn();
+    setAuthHooks({ accessToken: () => "expired", onUnauthorized });
+    mockFetch(
+      jsonResponse(401, { error: { code: "unauthorized", message: "Sign in to continue." } }),
+    );
+
+    const error = await failure(apiFetch("/me"));
+
+    expect(error.status).toBe(401);
+    expect(onUnauthorized).toHaveBeenCalledOnce();
+  });
+
+  it("does not report other errors as a 401", async () => {
+    const onUnauthorized = vi.fn();
+    setAuthHooks({ accessToken: () => "t", onUnauthorized });
+    mockFetch(jsonResponse(404, { error: { code: "not_found", message: "Not found." } }));
+
+    await failure(apiFetch("/me"));
+
+    expect(onUnauthorized).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,8 @@
 // The one place where the frontend talks to the backend.
 //
-// Every API call goes through apiFetch, so cross-cutting things are added here once,
-// such as the sign-in token from B4 on (ADR-0003, revisited in B4 because of ADR-0007).
+// Every API call goes through apiFetch, so cross-cutting things are added here once:
+// the sign-in token as `Authorization: Bearer` (ADR-0003 update, B4), and what to do
+// when the API answers 401.
 //
 // Paths are relative ("/api/v1/..."). The browser sends them to the address the page
 // came from: the Vite dev server locally, API Gateway in AWS (ADR-0007). No backend address is
@@ -46,6 +47,28 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
+export interface AuthHooks {
+  /** The current access token, if signed in. */
+  accessToken(): string | undefined;
+  /** Called when the API answers 401: the session is no longer valid. */
+  onUnauthorized(): void;
+}
+
+// Set by AuthProvider. This module knows nothing about how sign-in works.
+let authHooks: AuthHooks | undefined;
+
+export function setAuthHooks(hooks: AuthHooks | undefined): void {
+  authHooks = hooks;
+}
+
+function requestHeaders(hasBody: boolean): Record<string, string> | undefined {
+  const headers: Record<string, string> = {};
+  if (hasBody) headers["Content-Type"] = "application/json";
+  const token = authHooks?.accessToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return Object.keys(headers).length > 0 ? headers : undefined;
+}
+
 export interface ApiOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
@@ -63,7 +86,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
   try {
     response = await fetch(`${API_PREFIX}${path}`, {
       method,
-      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+      headers: requestHeaders(body !== undefined),
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: signal ?? null,
     });
@@ -76,6 +99,8 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
   if (response.status === 204) return undefined as T;
 
   const data = await readJson(response);
+
+  if (response.status === 401) authHooks?.onUnauthorized();
 
   if (!response.ok) {
     // The API always answers errors as { error: { code, message } } (SR-40). Anything

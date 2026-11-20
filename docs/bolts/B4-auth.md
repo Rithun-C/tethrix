@@ -339,3 +339,67 @@ Branch `b4/backend`.
   `/auth/callback`; scope `openid email`.
 - PR 3 (Terraform): Lambda needs `dynamodb:GetItem` on the table and the three
   `COGNITO_*` settings; smoke test: unknown API path 401, `/me` 401 without a token.
+
+## 12. Build notes: pull request 2, frontend sign-in (2026-11-20)
+
+Branch `b4/frontend`.
+
+### Files written
+
+| Task | Files |
+|---|---|
+| B4-03 | `app/frontend/src/auth/`: `service.ts` (the `AuthService` interface and the `oidc-client-ts` implementation), `settings.ts` (settings from `/api/v1/auth/config`), `sessionUserStore.ts` (access and ID token in memory only), `returnTo.ts` (only our own paths after sign-in), `idle.ts` (60-minute idle sign-out), `AuthProvider.tsx`; `components/RequireAuth.tsx`; `pages/CallbackPage.tsx`; `api/client.ts` (`Authorization: Bearer`, 401 ends the session); `api/me.ts`; sign-out button and email in `Layout.tsx`; time zone on the dashboard |
+| Tests | `auth/*.test.ts`, `api/client.test.ts` (5 new), `App.test.tsx` rewritten with a fake sign-in service (`auth/fakeAuth.ts`, test-only) |
+| Policy | Package cooldown raised to 14 days (owner, 2026-11-20): `docs/dependency-policy.md`, `.npmrc` `min-release-age=14`, `pyproject.toml` `exclude-newer = "14 days"` |
+
+### Pinned versions
+
+| Package | Version | Checked |
+|---|---|---|
+| `oidc-client-ts` | 3.5.0 | npm, repository `authts/oidc-client-ts`, published 2026-03-13 |
+| `jwt-decode` (pulled in by it) | 4.0.0 | npm, Auth0's repository, published 2023-10-27 |
+
+Under the new 14-day rule uv refused the backend's newest pins, so three went back one
+release: `boto3` and `boto3-stubs` 1.43.126 to 1.43.125 (with `botocore` 1.43.125),
+`fastapi` 0.162.2 to 0.162.0, and `click` 8.5.1 to 8.5.0 (pulled in by uvicorn).
+
+### How the tokens are kept (SR-53)
+
+```mermaid
+flowchart LR
+  token[Token answer from the sign-in server] --> mem[(Memory: access, ID and refresh token)]
+  token --> strip[Remove access and ID token, mark expired] --> ss[(sessionStorage: refresh token and profile)]
+  ss -- reload --> refresh[Refresh with the refresh token] --> mem
+  ls[(localStorage)]:::unused
+  classDef unused stroke-dasharray: 5 5
+```
+
+### Results
+
+- Frontend: 60 tests pass (46 new). Backend: 118 pass after the relock.
+- Prettier, ESLint and the type check pass.
+- Browser check against `make up` (headless Chromium, Playwright 1.55.0, run once from
+  a throwaway container, nothing added to the repo): 15 of 15. A protected page goes to
+  the local sign-in with a PKCE challenge; after sign-in the app returns to that page;
+  `sessionStorage` holds the user without access or ID token; `localStorage` is empty;
+  `/me` carries `Authorization: Bearer`; a reload costs exactly one refresh; sign-out
+  revokes the refresh token and clears the session; signing in as bob shows bob's data;
+  no console errors.
+- The owner repeated the browser check on the laptop (2026-11-20): works as expected.
+
+### What differs from the design
+
+- The ID token is kept out of `sessionStorage` too (the design only said the access
+  token); the profile claims the app shows are stored separately.
+- Found by the browser check: after a reload the app refreshed twice, because React's
+  StrictMode starts components twice in development. `init()` now runs once and shares
+  its result. Harmless before (no refresh-token rotation), but it would have broken with
+  rotation on.
+
+### Risks left for the deploy (PR 3)
+
+- Cognito's `/logout` expects `client_id` and `logout_uri`; the app also sends the
+  standard `post_logout_redirect_uri`, which Cognito should ignore. Checked on the first
+  sign-out in AWS.
+- Cognito's token and revoke endpoints must answer the browser's CORS preflight from the
+  app's address; they are meant for browser apps, so they should.
