@@ -1,12 +1,13 @@
 # The app's domain (ADR-0006): a Route 53 zone for the subdomain only, the TLS
-# certificate, and the records that point the name at CloudFront.
+# certificate, the name on API Gateway, and the records that point the name there
+# (ADR-0007).
 #
 # The parent domain hands this subdomain to Route 53 with four NS records, added by the
 # owner once at the parent's DNS provider (docs/runbooks/deploy-manual.md, step 3).
 # Nothing here touches the parent domain.
 #
 # Everything in this file exists only while var.use_custom_domain is true. With false,
-# CloudFront serves the app on its own *.cloudfront.net address and certificate.
+# the app is served on API Gateway's own execute-api address.
 
 resource "aws_route53_zone" "app" {
   count = var.use_custom_domain ? 1 : 0
@@ -29,8 +30,8 @@ resource "aws_route53_record" "caa" {
   records = ["0 issue \"amazon.com\""]
 }
 
-# The TLS certificate. ACM certificates for CloudFront must be in us-east-1, which is
-# already our only region. Public certificates are free and renew themselves.
+# The TLS certificate. A regional API Gateway domain needs a certificate in the same
+# region, us-east-1, our only region. Public certificates are free and renew themselves.
 resource "aws_acm_certificate" "app" {
   count = var.use_custom_domain ? 1 : 0
 
@@ -73,8 +74,32 @@ resource "aws_acm_certificate_validation" "app" {
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
 
-# The app's name points at CloudFront, for IPv4 (A) and IPv6 (AAAA). Alias records are
-# answered by Route 53 itself, and queries for aliases to CloudFront are free.
+# Our name on API Gateway, with our certificate. TLS_1_2: only TLS 1.2 and newer are
+# accepted (SR-50). Regional: served from us-east-1 directly, no CDN.
+resource "aws_apigatewayv2_domain_name" "app" {
+  count = var.use_custom_domain ? 1 : 0
+
+  domain_name = var.domain_name
+
+  domain_name_configuration {
+    certificate_arn = aws_acm_certificate_validation.app[0].certificate_arn
+    endpoint_type   = "REGIONAL"
+    security_policy = "TLS_1_2"
+    ip_address_type = "dualstack"
+  }
+}
+
+# Requests for our name go to the API's default stage.
+resource "aws_apigatewayv2_api_mapping" "app" {
+  count = var.use_custom_domain ? 1 : 0
+
+  api_id      = aws_apigatewayv2_api.app.id
+  domain_name = aws_apigatewayv2_domain_name.app[0].id
+  stage       = aws_apigatewayv2_stage.default.id
+}
+
+# The app's name points at the API Gateway domain, for IPv4 (A) and IPv6 (AAAA). Alias
+# records are answered by Route 53 itself.
 resource "aws_route53_record" "app" {
   for_each = var.use_custom_domain ? toset(["A", "AAAA"]) : toset([])
 
@@ -83,8 +108,8 @@ resource "aws_route53_record" "app" {
   type    = each.key
 
   alias {
-    name                   = aws_cloudfront_distribution.app.domain_name
-    zone_id                = aws_cloudfront_distribution.app.hosted_zone_id
+    name                   = aws_apigatewayv2_domain_name.app[0].domain_name_configuration[0].target_domain_name
+    zone_id                = aws_apigatewayv2_domain_name.app[0].domain_name_configuration[0].hosted_zone_id
     evaluate_target_health = false
   }
 }

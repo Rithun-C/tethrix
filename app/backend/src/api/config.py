@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     # AWS SDK finds the real DynamoDB by itself. Terraform never sets it.
     dynamodb_endpoint_url: str | None = None
 
+    # Folder with the built React app (index.html and assets/). Set in the runtime image,
+    # where the build is copied in; unset locally, where Vite serves the frontend
+    # (ADR-0007).
+    static_dir: str | None = None
+
     @model_validator(mode="after")
     def _local_settings_never_in_lambda(self) -> Self:
         # A deployed function pointed at some other "DynamoDB" address would send user

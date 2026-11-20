@@ -1,58 +1,56 @@
 # Manual deploy and smoke test
 
 - Tasks: B3-07, B3-08
-- Design: `docs/bolts/B3-walking-skeleton.md`; ADR-0002, ADR-0004, ADR-0006
+- Design: `docs/bolts/B3-walking-skeleton.md` (sections 12 to 14); ADR-0004, ADR-0006,
+  ADR-0007
 
 ## Purpose
 
-Put the app on AWS by hand, and prove that it works and that every way around
-CloudFront is closed.
+Put the app on AWS by hand, and prove that it works and that the side doors are closed.
+B6 automates the same steps in GitHub Actions; doing them by hand once first makes the
+pipeline easy to follow.
 
-The app's address: for now the distribution's own `https://<id>.cloudfront.net`
-address, because the parent domain `satrix.in` is on hold at the registrar
-(`use_custom_domain = false`, 2026-11-20). Once the hold is lifted, follow "Adding the
-domain later" below and the address becomes `https://tethrix.satrix.in`. B6 automates the same steps in GitHub
-Actions; doing them by hand once first makes the pipeline easy to follow.
+Where the app lives: API Gateway's own address
+`https://<id>.execute-api.us-east-1.amazonaws.com` for now, because `satrix.in` is on
+hold at the registrar (`use_custom_domain = false`). Once the hold is lifted, "Adding
+the domain" below moves it to `https://tethrix.satrix.in`.
 
 ## When to use it
 
-- The first deploy: every step, in order. While `use_custom_domain` is false, steps 2
-  and 3 are shorter (see each step).
-- Later deploys by hand: steps 4, 5, 6 and 7 only.
+- The first deploy: every step, in order.
+- Later deploys by hand: steps 3, 4 and 5.
 
 ## What gets built
 
 ```mermaid
 flowchart LR
-  user([Browser]) -- "DNS" --> r53[Route 53<br/>tethrix.satrix.in]
-  user -- "HTTPS, TLS 1.2+" --> cf[CloudFront]
-  cf -- "/api/* (OAC)" --> url[Lambda function URL] --> fn[Lambda<br/>FastAPI]
-  cf -- "everything else (OAC)" --> s3[(S3 bucket<br/>React build)]
+  user([Browser]) -- "HTTPS" --> apigw[API Gateway<br/>throttling, access logs]
+  apigw --> fn[Lambda<br/>FastAPI: API + React app]
   fn --> logs[(CloudWatch Logs)]
   ecr[(ECR)] -. image .-> fn
+  ddb[(DynamoDB<br/>not used yet)]
 ```
 
 ## Cost
 
-A few cents a month for ECR while the app runs on the default address. About 0.55 USD a
-month once the domain is added (0.50 USD for the hosted zone; B3 design, section 7). Nothing is hourly, so nothing is destroyed at the end of the session; this is
-the always-on app.
+Cents a month: API Gateway about 1 USD per million requests, ECR a few cents for the
+images. Route 53 adds 0.50 USD a month once the domain is on. Nothing is hourly, so
+nothing is destroyed at the end of a session; this is the always-on app.
 
 ## Prerequisites
 
-- The B3 pull request with the Terraform is merged, and you are on an up-to-date `main`:
-  `git switch main && git pull`.
+- The pull request with the API Gateway change is merged, and you are on an up-to-date
+  `main`: `git switch main && git pull`.
 - `export AWS_PROFILE=admin` in this terminal (and `aws login` if the session expired).
 - Docker Desktop is running.
-- Free plan check done and written in section 8 below: CloudFront Functions, Route 53
-  and ACM (Lambda, DynamoDB, S3, CloudFront and ECR were checked in I-11).
-- Only with the domain: access to the DNS settings of `satrix.in` at GoDaddy (step 3).
-- Concurrency limit: 10 (checked 2026-11-20). With 10, no reservation is possible, so
-  `lambda_reserved_concurrency` stays -1 and the account limit is the cap (SR-72).
+- Concurrency limit: 10 (checked 2026-11-20), so `lambda_reserved_concurrency` stays -1
+  and the account limit is the cap (SR-72).
 
 ## Steps
 
 ### Step 1: connect Terraform to its state (first time only)
+
+Done on 2026-11-20. For a new laptop:
 
 ```sh
 cp infra/app/backend.hcl.example infra/app/backend.hcl
@@ -60,140 +58,84 @@ cp infra/app/backend.hcl.example infra/app/backend.hcl
 terraform -chdir=infra/app init -backend-config=backend.hcl
 ```
 
-Why: the app stack keeps its state in the bucket from `infra/bootstrap`, under its own
-key `app/terraform.tfstate`.
+### Step 2: create only the ECR repository (first time only)
 
-### Step 2: create only the ECR repository (and the DNS zone, with the domain)
-
-While `use_custom_domain` is false (now):
+Done on 2026-11-20. For the record:
 
 ```sh
 terraform -chdir=infra/app plan -target=module.ecr -out=tfplan
 terraform -chdir=infra/app apply tfplan
 ```
 
-Expected: the plan creates 2 resources (repository, lifecycle rule).
+Why: Lambda cannot be created before its image exists in ECR, and the repository is in
+the same stack. `-target` is for exceptions like this one only.
 
-With the domain, the zone is created in the same step:
-
-```sh
-terraform -chdir=infra/app plan -target=module.ecr -target=aws_route53_zone.app -out=tfplan
-terraform -chdir=infra/app apply tfplan
-terraform -chdir=infra/app output name_servers
-```
-
-Expected: 3 resources (repository, lifecycle rule, hosted zone).
-Terraform warns that `-target` is not for routine use. That is right; this is the one
-exception.
-
-Why two applies: Lambda cannot be created before its image exists in ECR, and the
-certificate cannot be validated before the parent domain points at our zone. This step
-creates exactly the two things the others wait for.
-
-### Step 3: hand the subdomain to Route 53 (first time only, only with the domain)
-
-Skip this step while `use_custom_domain` is false.
-
-At the DNS provider of `satrix.in`, add four records:
-
-| Type | Name (host) | Value | TTL |
-|---|---|---|---|
-| NS | `tethrix` | first name server from step 2 | 3600 |
-| NS | `tethrix` | second | 3600 |
-| NS | `tethrix` | third | 3600 |
-| NS | `tethrix` | fourth | 3600 |
-
-Some providers want the name as `tethrix`, others as `tethrix.satrix.in`; both mean the
-same. Do not change any other record of `satrix.in`.
-
-Then wait until the internet sees it:
-
-```sh
-dig +short NS tethrix.satrix.in @1.1.1.1
-```
-
-Expected: the four `awsdns` names. This usually takes minutes, sometimes an hour.
-
-Why: this is "delegation". The parent keeps answering for everything else; for
-`tethrix` and anything under it, it now says "ask Route 53". From here on every record
-is in Terraform.
-
-### Step 4: build, scan and push the backend image
+### Step 3: build the app into the image, scan it, push it
 
 ```sh
 make push-backend
-```
-
-Expected: a build, a Trivy scan with no findings, a push, and a last line with the next
-command. It refuses to run with uncommitted changes, because the tag is the commit ID.
-
-Remember the tag for the next steps:
-
-```sh
 export TF_VAR_backend_image_tag=$(git rev-parse HEAD)
 ```
 
-Terraform reads any `TF_VAR_<name>` environment variable as that variable, so later
-commands in this terminal need no `-var`.
+Expected: the React files are built, then the backend image (with the React files
+inside) is built for arm64, scanned by Trivy with no findings, and pushed. It refuses to
+run with uncommitted changes, because the tag is the commit ID.
 
-### Step 5: create everything else
+The `export` line tells Terraform which image to run: Terraform reads any
+`TF_VAR_<name>` environment variable as that variable.
+
+### Step 4: create or update everything else
 
 ```sh
 terraform -chdir=infra/app plan -out=tfplan
 terraform -chdir=infra/app apply tfplan
 ```
 
-Read the plan before applying. Expected for the first deploy: about 20 resources to
-add without the domain (about 28 with it), 0 to change, 0 to destroy. Things to look
-for: the Lambda image ends with your commit ID; the function URL has
-`authorization_type = "AWS_IAM"`; without the domain the distribution has
-`cloudfront_default_certificate = true`, with it `minimum_protocol_version =
-"TLSv1.2_2021"`.
+Read the plan before applying.
 
-The apply takes 5 to 15 minutes, mostly CloudFront copying the distribution to its
-edge locations (with the domain, the certificate also waits for DNS validation).
+First apply after the switch from CloudFront (2026-11-20): the plan also destroys what
+the stopped CloudFront apply had created. Expect to see destroyed: the CloudFront origin
+access controls, the CloudFront function, the response headers policy, the frontend
+bucket and its settings, and the Lambda function URL (only those that were created).
+Expect to see created: the API, its integration, route, stage, access log group, and the
+Lambda permission. The Lambda function itself is updated in place (new image) or
+created, not replaced. Nothing in `module.ecr` or `module.table` may be destroyed or
+replaced; if it is, stop and ask.
 
-The address of the app:
+Later deploys: only the Lambda image changes.
 
-```sh
-terraform -chdir=infra/app output -raw app_url
-```
-
-### Step 6: publish the React files
-
-```sh
-make publish-frontend
-```
-
-Expected: build, upload, and `InProgress` for the invalidation (it finishes within a
-minute or two).
-
-### Step 7: smoke and negative tests
+### Step 5: smoke and negative tests
 
 ```sh
 make smoke
+terraform -chdir=infra/app output -raw app_url
 ```
 
-Expected: every line `PASS`, and `Failed: 0`. On the default address the TLS 1.1 check
-prints `SKIP` (F-022): AWS fixes the minimum at TLS 1.0 for its own certificate. The tests are in `scripts/smoke.sh`; each
-line says what it checks. They include the negative tests of B3-07: the function URL and
-the bucket answer 403 when called directly, plain HTTP is redirected, TLS 1.1 is
-refused, a POST without the body hash is refused, and a 17 KB body gets 413.
+Expected: every line `PASS`, `Failed: 0`. `INFO` lines are notes, not failures: while
+the domain is off, the TLS 1.1 check is reported for the record only, and the default
+address is the app's address.
+
+The tests are in `scripts/smoke.sh`; each line says what it checks: the page, a script
+file and the API with their security headers and caching, a POST, the 413 for a 17 KB
+body, a refused path outside the static folder, and no plain HTTP.
 
 Then by hand:
 
-1. Open the address from `app_url`. Expected: the dashboard with "API: ok".
-2. Open the browser's developer tools, Console tab. Expected: no CSP errors.
-3. Look at the API's log lines:
+1. Open the `app_url` address. Expected: the dashboard with "API: ok". The first visit
+   after a while takes a few seconds (cold start).
+2. Developer tools, Console tab: no CSP errors.
+3. Logs:
 
    ```sh
    aws logs tail "$(terraform -chdir=infra/app output -raw lambda_log_group)" --since 15m
+   aws logs tail "$(terraform -chdir=infra/app output -raw api_access_log_group)" --since 15m
    ```
 
-   Expected: one JSON line per request, with a request ID, the path template and the
-   status; no bodies, no headers.
+   Expected: the app's JSON line per request (request ID, path template, status; no
+   bodies, no headers), and API Gateway's line per request (time, IP, method, path,
+   status, latency).
 
-### Step 8: check the Lambda role's policy (SR-70)
+### Step 6: check the Lambda role's policy (SR-70)
 
 ```sh
 role=$(terraform -chdir=infra/app output -raw lambda_role_name)   # productivity-app-api-role
@@ -204,10 +146,9 @@ aws accessanalyzer validate-policy --policy-type IDENTITY_POLICY \
 rm /tmp/lambda-policy.json
 ```
 
-Expected: an empty list `[]`. The policy allows only writing to the function's own log
-group.
+Expected: `[]`. The policy only allows writing to the function's own log group.
 
-### Step 9: confirm Terraform and AWS agree
+### Step 7: confirm Terraform and AWS agree
 
 ```sh
 terraform -chdir=infra/app plan
@@ -215,68 +156,69 @@ terraform -chdir=infra/app plan
 
 Expected: `No changes.`
 
-### Step 10: record it
+### Step 8: record it
 
-- Section 8 below: date, commit ID (the first 7 characters are enough), smoke result.
-- Cost Log in the tracker: "B3 first deploy, always-on app, about 0.55 USD a month".
+- "Record of deploys" below: date, the first 7 characters of the commit, smoke result.
+- Cost Log in the tracker: "B3 first deploy, always-on app, cents a month".
 - `make sweep`: the new resources show up, all tagged `Stack = app`.
 
-Never paste Terraform outputs into docs: the ECR address and the bucket name contain
-the account ID.
+Never paste Terraform outputs into docs: the ECR and execute-api addresses identify the
+account.
+
+## Adding the domain
+
+When `dig +short NS satrix.in` shows the two `domaincontrol.com` names again:
+
+1. Claude changes the default of `use_custom_domain` to `true` in a pull request; you
+   merge it, so `main` keeps matching what runs.
+2. Create the zone first:
+
+   ```sh
+   terraform -chdir=infra/app plan -target=aws_route53_zone.app -out=tfplan
+   terraform -chdir=infra/app apply tfplan
+   terraform -chdir=infra/app output name_servers
+   ```
+
+3. At GoDaddy, DNS tab of `satrix.in`, add four records: type `NS`, name `tethrix`,
+   one per name server from step 2, TTL 1 hour. Do not touch the separate
+   "Nameservers" section. Wait until
+   `dig +short NS tethrix.satrix.in @1.1.1.1` shows the four `awsdns` names.
+4. `terraform -chdir=infra/app plan -out=tfplan` and apply: certificate, the API's
+   custom domain with TLS 1.2, the records, and the default execute-api address is
+   switched off.
+5. `make smoke`: now the TLS 1.1 check and the "default address is off" check run and
+   must pass.
 
 ## Problems
 
 | Problem | What to do |
 |---|---|
-| Step 5 waits a long time at `aws_acm_certificate_validation`, then fails | The NS records from step 3 are missing or not visible yet. Check with `dig` as in step 3, then run step 5 again |
-| `Error: No image yet` | `TF_VAR_backend_image_tag` is not set in this terminal. Run the `export` from step 4 |
-| `make push-backend` says the tag already exists | Tags are immutable. The image for this commit is already in ECR, so skip the push and use the same tag |
-| Lambda says the image manifest or media type is not supported | Docker added an index or attestation the image format Lambda reads does not expect. Check that `--provenance=false --sbom=false` are in the build line; note it in section 8 and ask Claude |
-| API calls answer 502 | Lambda started but the app did not. `aws logs tail` (step 7) shows why; a wrong architecture shows as `exec format error` |
-| API calls answer 403 through CloudFront | The OAC permission or the body hash. A GET failing means the permissions (step 5 plan); only POST failing means the hash |
-| The page loads but the API status says "unreachable" | Look at the browser console for a CSP error, and at the Network tab for the status of `/api/v1/health` |
-| The old page still shows after `make publish-frontend` | Wait for the invalidation, then reload without the cache (Shift + reload) |
-
-## Adding the domain later
-
-When `dig +short NS satrix.in` shows the two `domaincontrol.com` names again (the hold
-is lifted):
-
-1. Claude changes the default of `use_custom_domain` to `true` in a pull request; you
-   merge it, so `main` keeps matching what runs.
-2. Create the zone first:
-   `terraform -chdir=infra/app plan -target=aws_route53_zone.app -out=tfplan`, apply,
-   then `terraform -chdir=infra/app output name_servers`.
-3. Step 3 above: the four NS records at GoDaddy, and wait for `dig`.
-4. `terraform -chdir=infra/app plan -out=tfplan` and apply: certificate, records, and
-   the distribution gets the domain and TLS 1.2 minimum. The `*.cloudfront.net` address
-   keeps working.
-5. `make smoke`: the TLS 1.1 check now runs and must pass.
+| `Error: No image yet` | `TF_VAR_backend_image_tag` is not set in this terminal. Run the `export` from step 3 |
+| `make push-backend` says the tag already exists | Tags are immutable: the image for this commit is already in ECR. Skip the push, use the same tag |
+| Lambda says the image manifest or media type is not supported | Check that `--provenance=false --sbom=false` are in the build line; note it below and ask Claude |
+| The page answers 500 or `Internal Server Error` | `aws logs tail` on the Lambda log group (step 5). `STATIC_DIR ... index.html does not exist` means the image was built without the React files: use `make push-backend`, not a plain `docker build` |
+| `{"message":"Internal Server Error"}` (API Gateway's own wording) | API Gateway could not call Lambda: check the access log's `integrationErr` field, then the Lambda permission in the plan |
+| `{"message":"Too Many Requests"}` | Throttling (10 a second, bursts of 20) did its job. Wait a moment |
+| The certificate waits a long time, then fails (domain step 4) | The NS records are missing or not visible yet. Check with `dig`, then apply again |
 
 ## Undo
 
-Not part of a normal session: the app is always on. To take everything down
-(`terraform destroy`), the order matters because of subdomain takeover (T-032):
+Not part of a normal session: the app is always on. To take everything down:
 
-1. With the domain: remove the four NS records for `tethrix` at the provider of
-   `satrix.in` first.
-2. Then `terraform -chdir=infra/app apply -var final_destroy=true` (turns off deletion
+1. With the domain: remove the four NS records for `tethrix` at GoDaddy first
+   (subdomain takeover, T-032).
+2. `terraform -chdir=infra/app apply -var final_destroy=true` (turns off deletion
    protection), then `terraform -chdir=infra/app destroy`.
-
-If the zone were destroyed while the NS records still existed, someone else could
-create a Route 53 zone that happens to get the same name servers and serve their own
-content as `tethrix.satrix.in`.
 
 ## Record of deploys
 
 | Date | Commit | Smoke result | Notes |
 |---|---|---|---|
-| | | | |
+| 2026-11-20 | e1c08a7 | Not reached | First apply stopped at the CloudFront distribution (account needs a payment method and the Paid plan for CloudFront). Switched to API Gateway (ADR-0007) |
 
-Free plan check (first deploy):
+Free plan check:
 
 | Service | How it was confirmed | Result |
 |---|---|---|
-| CloudFront Functions | | |
-| Route 53 | | |
-| ACM | | |
+| CloudFront | Apply refused; AWS Support: needs a payment method and the Paid plan for this account | Not available to us (ADR-0007) |
+| API Gateway, Route 53, ACM, Lambda, ECR, DynamoDB, CloudWatch | AWS docs, "Supported AWS services for Sign up for AWS (new)", checked 2026-11-20 | Listed as Free Tier services |

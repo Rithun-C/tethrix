@@ -1,6 +1,6 @@
 # A Lambda function that runs our container image (with the Lambda Web Adapter inside),
-# its own role, its own log group and a function URL that only accepts signed requests.
-# ADR-0002, ADR-0004, task B3-02.
+# its own role and its own log group. It has no public address of its own: the caller
+# decides who may invoke it with aws_lambda_permission (ADR-0004, ADR-0007, task B3-02).
 
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
@@ -112,12 +112,4 @@ resource "aws_lambda_function" "this" { # nosemgrep: terraform.aws.security.aws-
 
   # The log group and the permission to write to it must exist before the first run.
   depends_on = [aws_iam_role_policy.this]
-}
-
-# A built-in HTTPS address for the function. AWS_IAM: only requests signed with AWS
-# credentials are accepted. CloudFront signs them (OAC); nobody else can (ADR-0002).
-resource "aws_lambda_function_url" "this" {
-  function_name      = aws_lambda_function.this.function_name
-  authorization_type = "AWS_IAM"
-  invoke_mode        = "BUFFERED"
 }

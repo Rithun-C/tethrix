@@ -1,6 +1,6 @@
 # ADR-0002: API edge (how requests reach the backend)
 
-- Status: Accepted 2026-11-15
+- Status: Superseded by ADR-0007 on 2026-11-20 (CloudFront is not enabled for this account on the Free plan). Accepted 2026-11-15
 - Date: 2026-11-15
 - Task: I-05
 

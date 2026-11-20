@@ -22,11 +22,10 @@ building one application end to end, inside the AWS Free plan.
 ```
 Browser
   |
-CloudFront (default domain)
-  |-- /*      -> S3 bucket (React build), private, read through OAC
-  |-- /api/*  -> Lambda Function URL (AWS_IAM auth), reached only through OAC
-                   |
-                 Lambda (container image: FastAPI + Lambda Web Adapter)
+API Gateway HTTP API (tethrix.satrix.in once the domain is on; ADR-0007)
+  |-- every path -> Lambda (container image: FastAPI + Lambda Web Adapter)
+                      |-- /api/*  -> API routes
+                      |-- others  -> React build inside the image
                    |-- DynamoDB (app data)
                    |-- S3 (attachments, presigned URLs)
                    |-- EventBridge Scheduler -> SNS (reminders)
@@ -42,9 +41,9 @@ Why this shape:
 
 Known quirks to design for:
 
-- OAC signs requests and replaces the `Authorization` header. The JWT must travel in a
-  custom header.
-- POST and PUT through OAC need the SHA-256 of the body in `x-amz-content-sha256`.
+- CloudFront is not enabled for this account on the Free plan, so the OAC design
+  (ADR-0002) was replaced by API Gateway (ADR-0007). The OAC quirks (custom token
+  header, body hash) no longer apply.
 - A DynamoDB item is limited to 400 KB. Long pages need chunking or S3 storage.
 - Cognito has no official local emulator. Local dev auth needs a deliberate design.
 

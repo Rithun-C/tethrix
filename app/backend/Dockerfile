@@ -11,6 +11,13 @@
 FROM ghcr.io/astral-sh/uv:0.13.7@sha256:96f40d3904aad8d0bd010539001d36c8e2188b981e1334471a90c4a1d93bb490 AS uv
 
 # Official Python image, slim variant: Debian with Python and little else.
+# The built React app (ADR-0007). Empty here on purpose: `make image-build` and
+# `make push-backend` replace this stage with the frontend's build output by passing
+# --build-context frontend-dist=.cache/frontend-dist. Built without it, the runtime image
+# refuses to start (STATIC_DIR without index.html), so a deploy cannot silently ship
+# without its frontend.
+FROM scratch AS frontend-dist
+
 # Lambda Web Adapter (ADR-0004): turns Lambda events into HTTP requests for uvicorn.
 # Released by AWS (github.com/aws/aws-lambda-web-adapter) on 2026-09-18.
 FROM public.ecr.aws/awsguru/aws-lambda-adapter:1.1.0@sha256:17cfd08eff1dfea3f6a9a1e9c65fdac80aa4919b6085e746615530f43f57d2f1 AS lambda-adapter
@@ -85,10 +92,14 @@ COPY src ./src
 # Lambda starts every program in /opt/extensions next to the function. Outside Lambda
 # (Docker, kind) nothing starts it, so the same image runs unchanged everywhere.
 COPY --from=lambda-adapter /lambda-adapter /opt/extensions/lambda-adapter
+
+# The React app, served by FastAPI on API Gateway (ADR-0007).
+COPY --from=frontend-dist / /app/static
 # Before the first request after a cold start, the adapter waits until health answers
 # 200. Without this it would accept any answer below 500 from "/".
 ENV AWS_LWA_READINESS_CHECK_PATH=/api/v1/health \
-    AWS_LWA_READINESS_CHECK_HEALTHY_STATUS=200
+    AWS_LWA_READINESS_CHECK_HEALTHY_STATUS=200 \
+    STATIC_DIR=/app/static
 
 USER 10001:10001
 # 8080 is the port the Lambda Web Adapter sends requests to by default.

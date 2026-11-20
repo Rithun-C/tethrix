@@ -439,3 +439,106 @@ when the hold is lifted.
 Checks: `terraform validate`, tflint, checkov, Trivy, Semgrep and shellcheck pass. Two
 checkov skips and one Semgrep exception were added for the default certificate, each
 pointing at F-022.
+
+## 13. Change: API Gateway instead of CloudFront (approved 2026-11-20)
+
+The first apply failed at the CloudFront distribution. AWS Support answered that
+CloudFront needs a payment method and the Paid plan for this account. The owner chose to
+stay on the Free plan and use API Gateway (ADR-0007, which supersedes ADR-0002).
+
+### What gets built now
+
+```mermaid
+flowchart LR
+  user([Browser]) -- "HTTPS, TLS 1.2" --> apigw[API Gateway HTTP API<br/>throttling 10/s, burst 20<br/>access logs]
+  apigw -- "every path" --> lambda[Lambda<br/>Web Adapter + FastAPI]
+  lambda -- "/api/*" --> api[API routes]
+  lambda -- "/assets/*, everything else" --> files[React build<br/>inside the image]
+  lambda --> logs[(CloudWatch Logs<br/>14 days)]
+  ddb[(DynamoDB<br/>not used yet)]
+```
+
+With the domain on (ADR-0006), Route 53 points `tethrix.satrix.in` at the API's custom
+domain, and the default `execute-api` address is switched off.
+
+### Changes by task
+
+| Task | Before (CloudFront design) | Now |
+|---|---|---|
+| B3-02 | Lambda with an `AWS_IAM` function URL | Lambda without a function URL; a permission lets only our API invoke it |
+| B3-04 | S3 bucket + CloudFront + routing function | React build copied into the backend image; FastAPI serves `/assets/*` and answers other paths with `index.html`. No bucket |
+| B3-05 | `/api/*` behaviour with OAC; browser sends the body hash | API Gateway catch-all route to Lambda. Body hash removed from the frontend |
+| B3-06 | CloudFront response headers policy | FastAPI middleware adds the same headers to every response |
+| B3-07 | Function URL and bucket give 403 | No function URL exists; the `execute-api` address is off once the domain is on; throttling answers 429 |
+| B3-08 | `make publish-frontend` uploads to S3 | Gone: `make push-backend` builds the frontend into the image. One deploy step fewer |
+| B3-09 | Theory: CloudFront, OAC, SigV4 | Same note, now as theory for a service we could not use, plus API Gateway |
+
+### Decisions for the owner
+
+| # | Decision | Options | Recommendation |
+|---|---|---|---|
+| 9 | Remove the body-hash code from the frontend | Remove now, or keep until B4 | Remove now: it only existed for OAC, and dead code invites mistakes |
+| 10 | Keep the echo route | Keep until B5, or remove | Keep: it still proves a POST body travels through API Gateway and the Web Adapter |
+| 11 | Throttling limits | 10 requests a second with bursts of 20, or other values | 10/20: a page load is about 3 requests, so this is plenty for a few users and stops a flood |
+
+### Threat model changes
+
+| ID | Change |
+|---|---|
+| T-002 | Lambda has no function URL any more; only API Gateway may invoke it |
+| T-021 | API Gateway throttling added in front of Lambda |
+| T-035 | Removed: there is no frontend bucket |
+| T-036 | Changes: the default `execute-api` address uses AWS's certificate; the custom domain gets TLS 1.2 (to confirm with `make smoke`) |
+| T-037 (new) | Path traversal through static file serving (`/assets/../../etc/passwd`): FastAPI's static files handler refuses paths outside its folder, and a test proves it |
+| T-038 (new) | The `execute-api` address bypasses the custom domain: switched off when the domain is on |
+
+### Cost
+
+API Gateway HTTP API: about 1 USD per million requests, so cents a month. The rest as in
+section 7, without S3 and CloudFront. Route 53 (0.50 USD a month) only once the domain is
+on.
+
+### Free plan check
+
+AWS's page "Supported AWS services for Sign up for AWS (new)" lists API Gateway,
+Route 53 and ACM as Free Tier services (checked 2026-11-20). It also lists CloudFront,
+which suggests the block is account verification, not the plan; the owner chose API
+Gateway for now and may return to CloudFront later (ADR-0007, last section).
+
+The owner approved decisions 9 to 11 with the recommendations on 2026-11-20.
+
+## 14. Build notes: API Gateway change (2026-11-20)
+
+Branch `b3/api-gateway`, one pull request.
+
+| Task | Files |
+|---|---|
+| B3-02 | `infra/modules/lambda_container_api/`: function URL removed, `invoke_arn` output added |
+| B3-04 | `app/backend/src/api/static.py` (React files, SPA fallback, cache headers), `config.py` (`STATIC_DIR`), backend `Dockerfile` (`frontend-dist` stage, copied to `/app/static`), `make frontend-dist`; `frontend.tf`, `cloudfront.tf`, `functions/spa_router.js` deleted |
+| B3-05 | `infra/app/api.tf` (API, integration, `$default` route, stage, access logs, Lambda permission); `dns.tf` (API Gateway custom domain, TLS 1.2, mapping, A and AAAA records); body hash removed from `client.ts` |
+| B3-06 | `app/backend/src/api/security_headers.py` (same headers as the CloudFront policy) |
+| B3-07, B3-08 | `scripts/smoke.sh` rewritten, `make smoke` takes the two host names, `make publish-frontend` removed, runbook rewritten |
+
+How it was checked:
+
+- Backend: 52 tests pass (20 new: security headers on normal, error and 413 answers;
+  index and React routes; asset caching; unknown API paths stay JSON 404; three
+  encodings of path traversal refused; start-up fails without `index.html`).
+- Frontend: 12 tests pass (the two hash tests are gone with the code).
+- The runtime image was built with the React files and run locally read-only with no
+  Linux capabilities: page, React route, script file, API, 404, echo, traversal and all
+  five security headers answered as expected.
+- `scripts/smoke.sh` was dry-run against that container over plain HTTP: 15 pass; the
+  one failure was the "no plain HTTP" check, which is expected locally (the container
+  only speaks HTTP; API Gateway only speaks HTTPS).
+- `make check`: tflint, checkov, Trivy, Semgrep, gitleaks, hadolint, pip-audit,
+  npm audit and image scans pass. New skip: CKV_AWS_309 (route without an API Gateway
+  authorizer), because sign-in is checked in FastAPI from B4 (ADR-0003); a JWT
+  authorizer is reconsidered in B4.
+
+Not checked, because Claude has no AWS access:
+
+- The real API Gateway to Web Adapter path (payload 2.0) and the plan that removes the
+  CloudFront leftovers. Step 4 of the runbook says what the plan should show.
+- What the default `execute-api` address accepts for TLS; `make smoke` reports it as
+  INFO while the domain is off.

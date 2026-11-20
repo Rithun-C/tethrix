@@ -8,7 +8,7 @@ module "backend" {
   source = "../modules/lambda_container_api"
 
   name                 = "${var.project}-api"
-  description          = "FastAPI backend behind CloudFront (ADR-0002)."
+  description          = "FastAPI backend and React app behind API Gateway (ADR-0007)."
   image_uri            = local.backend_image_uri
   memory_mb            = 512
   timeout_seconds      = 10

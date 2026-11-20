@@ -12,11 +12,9 @@ The Terraform stack for the application itself (bolt B3 onward). How to deploy i
 | `variables.tf` | Inputs: domain, backend image tag, concurrency cap, final-destroy switch |
 | `ecr.tf` | Repository for the backend image (module `ecr_repository`) |
 | `dynamodb.tf` | The app's table (module `dynamodb_table`) |
-| `lambda.tf` | The backend function and its function URL (module `lambda_container_api`) |
-| `dns.tf` | Route 53 zone for `tethrix.satrix.in`, CAA record, ACM certificate, alias records (ADR-0006) |
-| `frontend.tf` | Private bucket for the React build |
-| `cloudfront.tf` | Distribution, OAC, routing function, security headers, Lambda permissions |
-| `functions/spa_router.js` | The CloudFront Function that sends React routes to `index.html` |
+| `lambda.tf` | The backend function (module `lambda_container_api`) |
+| `api.tf` | API Gateway HTTP API: catch-all route to Lambda, stage with throttling and access logs, Lambda permission (ADR-0007) |
+| `dns.tf` | Route 53 zone for `tethrix.satrix.in`, CAA record, ACM certificate, API Gateway custom domain, alias records (ADR-0006) |
 | `outputs.tf` | Values the `make` deploy targets read. Some contain the account ID: never paste them into docs |
 
 `make validate`, `make lint`, `make checkov` check the code without touching AWS.
