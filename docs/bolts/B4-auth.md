@@ -458,8 +458,8 @@ Pull request 4 (branch `b4/close`): theory note `docs/theory/oauth-oidc-jwt.md`
 |---|---|
 | Without a token every protected route answers 401, through API Gateway and in tests | Done: `make smoke` and the backend tests |
 | Owner signs in on AWS with password and authenticator app, sees their email, signs out | Done (owner, 2026-11-20) |
-| The back button after sign-out does not bring the data back | Owner to confirm (see below) |
-| A second test user cannot see the first user's profile | Done in tests (`test_idor.py`); manual check on AWS: owner to confirm |
+| The back button after sign-out does not bring the data back | Done (owner, 2026-11-20): back shows the sign-in page |
+| A second test user cannot see the first user's profile | Done: tests (`test_idor.py`) and on AWS (owner, 2026-11-20): a second user saw only their own email and time zone; test user deleted afterwards |
 | Local `make up`: alice and bob each see only their own profile | Done (browser check, PR 2) |
 | `AUTH_MODE=local` with the Lambda variable set fails to start | Done (`test_config.py`) |
 | Scanners pass; records updated; owner's journal entry | Scanners and records done; journal entry is the owner's |

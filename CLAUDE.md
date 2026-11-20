@@ -323,5 +323,5 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   sign-in with password and authenticator app works. B4 pull request 4 written on
   branch `b4/close`: theory note `docs/theory/oauth-oidc-jwt.md`, ADR-0003 deploy note,
   threat model (T-001, T-003, T-015, T-033, T-039 Done), deploy record, glossary,
-  tracker. Waiting for the owner's back-button and second-user checks, the journal
+  tracker. Owner's back-button and second-user checks passed. Waiting for the journal
   entry and approval to close B4.
