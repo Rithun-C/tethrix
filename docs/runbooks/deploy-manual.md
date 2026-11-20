@@ -229,6 +229,7 @@ Not part of a normal session: the app is always on. To take everything down:
 
 | Date | Commit | Smoke result | Notes |
 |---|---|---|---|
+| 2026-11-20 | e8a2622 | Passed, 0 failed | B4 sign-in: Cognito pool, authorizer, routes. First user created; sign-in with authenticator app works. Owner: "authentication worked as expected" |
 | 2026-11-20 | 97e3d10 | 17 passed, 0 failed | First deploy on API Gateway, on the default execute-api address. Owner: "works as expected" |
 | 2026-11-20 | e1c08a7 | Not reached | First apply stopped at the CloudFront distribution (account needs a payment method and the Paid plan for CloudFront). Switched to API Gateway (ADR-0007) |
 
@@ -237,4 +238,5 @@ Free plan check:
 | Service | How it was confirmed | Result |
 |---|---|---|
 | CloudFront | Apply refused; AWS Support: needs a payment method and the Paid plan for this account | Not available to us (ADR-0007) |
+| Cognito (Lite) | Applied 2026-11-20 without errors; AWS docs list Cognito in the Free Tier (10,000 monthly users on Lite) | Works on the Free plan |
 | API Gateway, Route 53, ACM, Lambda, ECR, DynamoDB, CloudWatch | AWS docs, "Supported AWS services for Sign up for AWS (new)", checked 2026-11-20 | Listed as Free Tier services |

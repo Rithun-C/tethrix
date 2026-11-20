@@ -28,6 +28,7 @@ you would use it, and why we are not using it here.
 | Terraform basics, explained through G-06: [terraform-basics.md](terraform-basics.md) | G-06 |
 | Terraform state, locking, drift, modules: [terraform-state-and-modules.md](terraform-state-and-modules.md) | B1-08 |
 | Supply-chain security: [supply-chain-security.md](supply-chain-security.md) | B1-09 |
+| OAuth 2.0, OpenID Connect, JWT mistakes, user pools vs identity pools, BFF: [oauth-oidc-jwt.md](oauth-oidc-jwt.md) | B4-07 |
 | Container internals, image hardening, orchestration: [containers-and-eks.md](containers-and-eks.md) | B2-08 |
 | CloudFront, OAC vs OAI, SigV4 | B3-09 |
 | VPC basics; why this Lambda is outside a VPC | B3-10 |
