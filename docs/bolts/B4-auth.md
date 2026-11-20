@@ -1,6 +1,6 @@
 # Bolt B4: Auth
 
-- Status: Design approved 2026-11-20 with all recommendations (decisions 1 to 8)
+- Status: Done, approved by the owner 2026-11-20. Deployed (`e8a2622`), smoke passed, sign-in with authenticator app works. Design approved 2026-11-20 with all recommendations (decisions 1 to 8)
 - Date: 2026-11-20
 - Tasks: B4-01 to B4-08
 - AWS cost: 0 USD extra (section 7). No hourly services.
@@ -463,3 +463,8 @@ Pull request 4 (branch `b4/close`): theory note `docs/theory/oauth-oidc-jwt.md`
 | Local `make up`: alice and bob each see only their own profile | Done (browser check, PR 2) |
 | `AUTH_MODE=local` with the Lambda variable set fails to start | Done (`test_config.py`) |
 | Scanners pass; records updated; owner's journal entry | Scanners and records done; journal entry is the owner's |
+
+### Closed
+
+B4 closed and approved by the owner on 2026-11-20. Carried over as owner tasks: the
+journal entry and the Cost Log balances.
