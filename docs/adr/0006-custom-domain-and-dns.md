@@ -127,6 +127,9 @@ second apply, after `make smoke` passes on the domain. Cognito's sign-in page st
 its prefix address (a Cognito custom domain needs CloudFront). No HSTS preload. The CAA
 record stays.
 
+Deployed 2026-11-21 (`899c7cd`): both smoke runs passed and sign-in works on
+`tethrix.satrix.in`.
+
 ## What I learned
 
 To be filled in by the owner.

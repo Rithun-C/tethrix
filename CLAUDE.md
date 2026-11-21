@@ -337,3 +337,8 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   smoke checks for the certificate and delegation, runbook "Adding the domain" and
   "Removing the domain", cost model row. Static checks only. Next: owner merges, then
   follows the runbook (zone, NS records at GoDaddy, two applies). B5 not started.
+- 2026-11-21: #22 merged. Owner deployed `899c7cd`: the app runs on
+  `https://tethrix.satrix.in`, the default execute-api address is off, both smoke runs
+  passed, sign-in works. T-032, T-036, T-038 Done; F-022 closed. Route 53 zone adds
+  0.50 USD a month (Cost Log row). Next: bolt B5 (Todos), starting with a design
+  proposal, when the owner says so.
