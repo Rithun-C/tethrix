@@ -1,6 +1,8 @@
 # Design: bolt B5, Todos
 
-- Status: Approved 2026-11-22 with decisions 1, 3 (component library provided), 5 and 6 as
+- Status: Deployed 2026-11-22 (`c2ef066`, smoke passed, owner: "todos work"). Waiting for
+  the owner's answers to the theory questions, the journal entry and approval to close.
+  Approved 2026-11-22 with decisions 1, 3 (component library provided), 5 and 6 as
   recommended; decision 2 the other way (`python-ulid`); decision 4 the other way
   (optimistic updates). See section 8
 - Stories: US-10 to US-13 (`docs/inception/02-user-stories.md`)
@@ -364,3 +366,18 @@ Branch `b5/frontend`. #25 (pull request 1) merged first.
   session). The owner's browser check covers it.
 - Owner's browser check (first look): the page stopped at 880 px and left an empty band
   on a wide window. It now fills the space beside the menu.
+
+## 18. Deploy and closing (2026-11-22)
+
+- #26 merged as `c2ef066`. The owner deployed brand and todos in one go: `make
+  push-backend`, `terraform apply` (new image, the Lambda role's new database
+  statements; nothing created or destroyed), `make smoke` passed. Browser check on
+  `tethrix.satrix.in`: todos work.
+- Pull request 3 (branch `b5/close`): theory note
+  `docs/theory/dynamodb-keys-gsis-capacity.md` (B5-06, ten questions in section 11),
+  findings F-024 (Semgrep, test code) and F-025 (two library colours under WCAG), deploy
+  record, Cost Log row, tracker, `CLAUDE.md`.
+- Threat model after B5: T-043 Done; T-013 rule enforced on todo routes; T-007 and T-022
+  done for todos, continuing with habits, journal and pages.
+- Still open for the owner: answers to the theory questions, the B5 journal entry (plus
+  B1 to B4), and the Cost Log balances.

@@ -29,6 +29,7 @@ you would use it, and why we are not using it here.
 | Terraform state, locking, drift, modules: [terraform-state-and-modules.md](terraform-state-and-modules.md) | B1-08 |
 | Supply-chain security: [supply-chain-security.md](supply-chain-security.md) | B1-09 |
 | OAuth 2.0, OpenID Connect, JWT mistakes, user pools vs identity pools, BFF: [oauth-oidc-jwt.md](oauth-oidc-jwt.md) | B4-07 |
+| DynamoDB keys and partitions, GSIs, conditional writes, cursors, capacity modes, why `LeadingKeys` does not fit: [dynamodb-keys-gsis-capacity.md](dynamodb-keys-gsis-capacity.md) | B5-06 |
 | Container internals, image hardening, orchestration: [containers-and-eks.md](containers-and-eks.md) | B2-08 |
 | CloudFront, OAC vs OAI, SigV4 | B3-09 |
 | VPC basics; why this Lambda is outside a VPC | B3-10 |
@@ -36,7 +37,6 @@ you would use it, and why we are not using it here.
 | OAuth2/OIDC, JWT pitfalls, user pools vs identity pools | B4-07 |
 | Backend-for-frontend (BFF): tokens in cookies instead of the browser (ADR-0003) | B4-07 |
 | Lambda Web Functions (Node.js only; rejected in ADR-0002) | B3-09 |
-| DynamoDB keys, GSIs, capacity modes | B5-06 |
 | OIDC federation, deployment strategies, AWS Code* services | B6-08 |
 | KMS envelope encryption; Parameter Store vs Secrets Manager | B8-09 |
 | S3 security deep dive; event-driven patterns | B10-07 |
