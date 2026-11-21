@@ -320,3 +320,47 @@ Branch `b5/backend`.
   (tested).
 - Tests: 212 pass, with DynamoDB Local. A planted leak (every read looking in alice's
   partition) made the two-user tests fail with 200 instead of 404, so they work.
+
+## 17. Build notes: pull request 2, components and the Todos page (2026-11-22)
+
+Branch `b5/frontend`. #25 (pull request 1) merged first.
+
+- `src/ui/`: Button (primary, secondary, outline, ghost, danger; sm and md), Checkbox (a
+  real checkbox, styled), Field (label above, "Optional" in words, errors below with a
+  red moon), Badge, Alert, Toast (bottom right, at most three, five seconds; top on
+  phones). All styling is in `styles.css`: the CSP allows no inline styles, and no
+  component uses one.
+- `src/api/todos.ts`: the five calls, plus `fitsView` and `sortForView`, the same rules
+  the server uses, so an optimistic change lands where the server would put it.
+- `src/pages/TodosPage.tsx`:
+  - Views are links (`/todos?view=upcoming`), styled as the library's orbit tabs, so
+    back, reload and bookmarks work. Today is the default.
+  - Optimistic updates (decision 4). Add shows the todo at once, with its controls
+    waiting until the server answers; tick, edit and delete change the list at once.
+    If the server refuses, the old copy comes back and a toast says why; a 404 or 409
+    also reloads the list. A ticked todo stays where it is until the view reloads, so a
+    mistake can be unticked in place.
+  - Adding a todo that belongs in another view (for example a date next week while on
+    Today) says where it went.
+  - The edit form fetches the one todo for its notes (decision 1). Delete asks "Delete
+    this todo for good?" with Yes and No in the page (decision 5).
+  - "Load more" when the server says there is more.
+  - Text is only ever React text; a test with an `<img onerror>` title proves it.
+- The menu is restyled as the library's sidebar: items on an orbit line, a moon beside
+  the current one. On phones it becomes a bar across the top.
+- Contrast: two library values failed WCAG and were changed (`docs/brand.md`): the
+  focus ring is violet on light, and the delete button keeps the light red on dark.
+- Tests: 76 frontend tests (15 new) against a fake API that keeps state, including a
+  held request to see the optimistic state before the server answers. Lint and types
+  clean. The React `act` warnings printed by `App.test.tsx` were there before B5.
+- Semgrep flagged `Object.assign(found, changes)` in the test's fake API (mass
+  assignment). Only test code, but the fake now copies the allowed fields one by one,
+  like the real API, instead of suppressing the rule.
+- Live check on `make up` with local tokens (curl through the Vite dev server): views,
+  add, tick, delete, an unknown field refused, and bob gets 404 on GET, PATCH and DELETE
+  of alice's todo. The laptop clock was 21 November 20:49 UTC and alice's "today" was
+  22 November (Kolkata), as designed.
+- Not checked by Claude: the page in a real browser (Playwright is not installed in this
+  session). The owner's browser check covers it.
+- Owner's browser check (first look): the page stopped at 880 px and left an empty band
+  on a wide window. It now fills the space beside the menu.

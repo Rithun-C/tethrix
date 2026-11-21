@@ -32,19 +32,34 @@ colours come from the tokens, so it reverses in dark mode by itself. Screen read
 | `--text` | `#111015` (ink) | `#F3EFFA` (off-white) | Text, logo lines |
 | `--text-muted` | `#5B5762` | `#A39FAD` | Secondary text |
 | `--bg` | `#FFFFFF` | `#0B0A10` | Page background |
-| `--surface` | `#F7F5FA` | `#15131B` | Menu and panels |
+| `--surface` | `#F7F5FA` | `#0F0E15` | Menu and quiet panels |
 | `--border` | `#E2DEE8` | `#2A2733` | Lines between areas |
-| `--accent-soft` | `#F2EBFD` | `#22143C` | Hover and current menu item |
-| `--ok`, `--error` | `#1A7F37`, `#CF222E` | `#3FB950`, `#F85149` | Status text |
+| `--accent-soft` | `#F2EBFD` (violet tint) | `#22143C` | Hover, secondary buttons and badges |
+| `--raised` | `#FFFFFF` | `#15131C` | Cards, inputs, the current menu item ("orbit 1") |
+| `--border-strong` | `#CFC9D8` | `#3A3644` | Control edges |
+| `--border-hover` | `#8A8594` | same | Hovered fields, checkbox edge (3:1) |
+| `--ring` | `#7C3AED` | `#AA7FF3` | Focus ring (see below) |
+| `--moon` | `#7C3AED` | `#AA7FF3` | "You are here" markers |
+| `--ok`, `--error` | `#15803D`, `#DC2626` | `#4ADE80`, `#F87171` | Status |
+| `--danger-text` | `#B91C1C` | `#F87171` | Danger words and badges |
+| `--danger-button` | `#DC2626` | same | Delete buttons (white on it 4.8:1 in both themes) |
 
 `--violet-deep` and `--lavender` are the canvas's own formulas applied to the violet
-(72% of each channel; 35% of the way to white). The surface, border and soft-accent dark
-values and the status colours are not on the canvas; they were chosen to sit with it and
-may change with the component library design.
+(72% of each channel; 35% of the way to white). Since B5 the other values come from the
+owner's component library Satrix UI (`docs/bolts/B5-todos.md` section 15), with two
+changes for contrast:
+
+- Focus ring on light: the library draws it lavender, which is 2.98:1 on white, under
+  the 3:1 a focus ring needs. It is violet on light (5.7:1) and lavender on dark (6.6:1).
+- Delete button on dark: white on the dark theme's red `#F87171` is 2.77:1, so the
+  button keeps the light red `#DC2626` (4.8:1) in both themes. Danger words on dark
+  still use `#F87171`.
 
 Contrast (WCAG 2.2, 4.5:1 for text): white on violet 5.7:1; violet on white 5.7:1;
 muted on white about 7:1; off-white on the dark background about 17:1; lavender on the
-dark background about 6.5:1.
+dark background about 6.5:1. Added in B5: deep violet on the tint 7.7:1; danger text on
+its badge 5.7:1 (light) and 5.5:1 (dark); muted on the dark card 7.1:1; checkbox edge
+3.6:1 (light) and 5.1:1 (dark), above the 3:1 for controls.
 
 ## Type
 
@@ -65,7 +80,8 @@ The app is called Tethrix everywhere a person sees it. The Terraform project nam
 Terraform replace the table, the user pool and the ECR repository, losing data and user
 accounts, for no gain.
 
-## Next
+## Component library
 
-The owner will provide the design for the component library. It builds on these tokens:
-components use the tokens, never raw colours.
+Satrix UI, the owner's design (B5). Shapes, spacing, sizes, elevation and motion are
+tokens in `styles.css`; the React components are in `app/frontend/src/ui/`. The library
+uses Sora, Inter and JetBrains Mono; the app keeps Sansation, the owner's later choice.
