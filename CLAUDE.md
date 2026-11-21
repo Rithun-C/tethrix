@@ -55,7 +55,7 @@ and a dashboard.
 
 - Front door: API Gateway HTTP API, one catch-all route to Lambda, throttling and access
   logs (ADR-0007, replaces CloudFront + OAC from ADR-0002: CloudFront is not enabled for
-  this account on the Free plan). Custom domain `tethrix.satrix.in` (ADR-0006) when on
+  this account on the Free plan). Custom domain `tethrix.satrix.in` (ADR-0006), on since 2026-11-21
 - Backend: FastAPI in a container on Lambda, using AWS Lambda Web Adapter. It also
   serves the React build (copied into the image) and sets the security headers
 - Auth: Cognito user pool. FastAPI verifies JWTs.
@@ -150,6 +150,7 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | 2026-11-20 | B3 closed (smoke 17 passed). B3-09 and B3-10 theory deferred: the owner writes them at the end of the project, from memory |
 | 2026-11-20 | B4 design approved with all recommendations: `Authorization: Bearer`; JWT checked by API Gateway authorizer and FastAPI; Cognito prefix domain (custom domain needs CloudFront); frontend reads auth settings from `GET /api/v1/auth/config`; local OIDC server (`mock-oauth2-server`) in Compose; `make user-create` writes the profile; B4 adds only `GET /me`; echo protected |
 | 2026-11-20 | B3 decisions 9 to 11: body-hash code removed from the frontend; echo route kept until B5; throttling 10 requests a second, bursts of 20 |
+| 2026-11-21 | GoDaddy lifted the hold on `satrix.in`. Domain switch approved with all recommendations (`docs/bolts/domain-switch.md`): `use_custom_domain = true`, default address off in a second apply, Cognito prefix domain kept, no HSTS preload, CAA kept. Route 53 zone adds 0.50 USD a month |
 | 2026-11-20 | B4 closed: Cognito Lite sign-in with authenticator app on AWS, JWT authorizer plus FastAPI checks, admin-created accounts. Journal entry and Cost Log balances carried over as owner tasks |
 
 ## Open decisions
@@ -159,7 +160,6 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | Editor library: TipTap vs BlockNote | ADR in bolt B8 |
 | Journal encryption: SSE vs KMS key vs client-side | ADR in bolt B8 |
 | App name | Any time |
-| Switch on `tethrix.satrix.in` (`use_custom_domain = true`) | When GoDaddy lifts the hold on `satrix.in` |
 | CloudFront back in front (only if enabled without the Paid plan) | New ADR, any time |
 
 ## Current status
@@ -331,3 +331,9 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   and approved. Carried over as owner tasks: B4 journal entry (plus B1, B2, B3), Cost Log
   balances for the B3 and B4 row. Next: bolt B5 (Todos), starting with a design
   proposal. Not started.
+- 2026-11-21: #21 merged. GoDaddy lifted the hold on `satrix.in`. Domain switch design
+  (`docs/bolts/domain-switch.md`) approved with all recommendations; written on branch
+  `domain/switch-on`: `use_custom_domain` default true, new `disable_default_endpoint`,
+  smoke checks for the certificate and delegation, runbook "Adding the domain" and
+  "Removing the domain", cost model row. Static checks only. Next: owner merges, then
+  follows the runbook (zone, NS records at GoDaddy, two applies). B5 not started.

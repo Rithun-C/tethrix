@@ -3,7 +3,8 @@
 # (ADR-0007).
 #
 # The parent domain hands this subdomain to Route 53 with four NS records, added by the
-# owner once at the parent's DNS provider (docs/runbooks/deploy-manual.md, step 3).
+# owner once at the parent's DNS provider (docs/runbooks/deploy-manual.md, "Adding the
+# domain"). Before this zone is ever destroyed, those NS records come off first (T-032).
 # Nothing here touches the parent domain.
 #
 # Everything in this file exists only while var.use_custom_domain is true. With false,
@@ -39,7 +40,7 @@ resource "aws_acm_certificate" "app" {
   validation_method = "DNS"
 
   # When the certificate has to be replaced, the new one is created before the old one
-  # is removed, so CloudFront is never left without one.
+  # is removed, so the API's custom domain is never left without one.
   lifecycle {
     create_before_destroy = true
   }

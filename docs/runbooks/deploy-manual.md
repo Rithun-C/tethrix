@@ -182,27 +182,85 @@ account.
 
 ## Adding the domain
 
-When `dig +short NS satrix.in` shows the two `domaincontrol.com` names again:
+Design: `docs/bolts/domain-switch.md` (approved 2026-11-21). Done once. Cost: the Route
+53 zone, 0.50 USD a month.
 
-1. Claude changes the default of `use_custom_domain` to `true` in a pull request; you
-   merge it, so `main` keeps matching what runs.
-2. Create the zone first:
+Before you start: `dig +short NS satrix.in` shows the two `domaincontrol.com` names (the
+parent is not on hold), and `use_custom_domain` defaults to `true` on `main`.
+
+1. Create only the zone, and read its four name servers:
 
    ```sh
-   terraform -chdir=infra/app plan -target=aws_route53_zone.app -out=tfplan
+   terraform -chdir=infra/app plan -target='aws_route53_zone.app[0]' -out=tfplan
    terraform -chdir=infra/app apply tfplan
    terraform -chdir=infra/app output name_servers
    ```
 
-3. At GoDaddy, DNS tab of `satrix.in`, add four records: type `NS`, name `tethrix`,
-   one per name server from step 2, TTL 1 hour. Do not touch the separate
-   "Nameservers" section. Wait until
-   `dig +short NS tethrix.satrix.in @1.1.1.1` shows the four `awsdns` names.
-4. `terraform -chdir=infra/app plan -out=tfplan` and apply: certificate, the API's
-   custom domain with TLS 1.2, the records, and the default execute-api address is
-   switched off.
-5. `make smoke`: now the TLS 1.1 check and the "default address is off" check run and
-   must pass.
+   Terraform warns that `-target` is for exceptional cases; this is one.
+
+2. At GoDaddy, `satrix.in`, the DNS records page: add four records, type `NS`, name
+   `tethrix`, one per name server from step 1 (without the dot at the end if GoDaddy
+   refuses it), TTL 1 hour. Do not touch the separate "Nameservers" setting: that would
+   hand the whole of `satrix.in` away.
+
+3. Wait until the delegation answers (minutes, sometimes up to an hour):
+
+   ```sh
+   dig +short NS tethrix.satrix.in @1.1.1.1
+   ```
+
+   Expected: the four `awsdns` names from step 1.
+
+4. Everything else, with the default address still on:
+
+   ```sh
+   terraform -chdir=infra/app plan -var disable_default_endpoint=false -out=tfplan
+   terraform -chdir=infra/app apply tfplan
+   ```
+
+   Expected in the plan: created: the CAA record, the certificate, its validation
+   record and validation, the API's custom domain, the mapping, the A and AAAA
+   records. Updated in place: the Cognito app client (callback and sign-out URLs).
+   Nothing destroyed. The certificate step waits until ACM has seen the record, usually
+   a few minutes.
+
+5. Check the domain:
+
+   ```sh
+   ALLOW_DEFAULT_ENDPOINT=1 make smoke
+   ```
+
+   Expected: `Failed: 0`, and one INFO line saying the default address still answers.
+   Then open `https://tethrix.satrix.in`, sign in (once more: the old address's
+   session does not carry over) and check the dashboard.
+
+6. Switch off the default address:
+
+   ```sh
+   terraform -chdir=infra/app plan -out=tfplan
+   terraform -chdir=infra/app apply tfplan
+   ```
+
+   Expected: one change, the API updated in place (`disable_execute_api_endpoint`).
+
+7. `make smoke`. Expected: `Failed: 0`, with "default execute-api address is switched
+   off" and "TLS 1.1 is refused" as PASS lines.
+
+8. Record it below and in the Cost Log ("Route 53 zone, 0.50 USD a month from now on").
+
+Rollback (the name stops working, for example if the hold comes back): one apply with
+`-var use_custom_domain=false`. The execute-api address comes back and Cognito's URLs
+follow it. Remove the NS records at GoDaddy before or right after (T-032).
+
+## Removing the domain
+
+Order matters (T-032, subdomain takeover): if the zone is deleted while GoDaddy still
+points `tethrix` at it, someone else could create a zone with the same name servers and
+take the name.
+
+1. At GoDaddy, delete the four `NS` records named `tethrix`.
+2. Wait an hour (the TTL), so caches forget them.
+3. Then apply with `-var use_custom_domain=false`, or destroy everything (Undo).
 
 ## Problems
 
@@ -220,8 +278,8 @@ When `dig +short NS satrix.in` shows the two `domaincontrol.com` names again:
 
 Not part of a normal session: the app is always on. To take everything down:
 
-1. With the domain: remove the four NS records for `tethrix` at GoDaddy first
-   (subdomain takeover, T-032).
+1. With the domain: remove the four NS records for `tethrix` at GoDaddy first and
+   wait an hour ("Removing the domain", T-032).
 2. `terraform -chdir=infra/app apply -var final_destroy=true` (turns off deletion
    protection), then `terraform -chdir=infra/app destroy`.
 

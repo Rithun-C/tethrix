@@ -117,6 +117,16 @@ certificate, so SR-50 is not fully met (F-022, T-036). Browsers use TLS 1.3 anyw
 Nothing has to be rebuilt to switch: the same distribution gets the name and the
 certificate.
 
+## Update 2026-11-21: switched on
+
+GoDaddy lifted the hold. The switch follows `docs/bolts/domain-switch.md` (approved
+2026-11-21, all four recommendations): the app runs on `tethrix.satrix.in` through
+API Gateway's custom domain (ADR-0007 replaced CloudFront), with an ACM certificate in
+us-east-1 and the `TLS_1_2` policy. The default execute-api address is switched off in a
+second apply, after `make smoke` passes on the domain. Cognito's sign-in page stays on
+its prefix address (a Cognito custom domain needs CloudFront). No HSTS preload. The CAA
+record stays.
+
 ## What I learned
 
 To be filled in by the owner.
