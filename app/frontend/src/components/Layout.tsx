@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router";
 
 import { useAuth } from "../auth/AuthProvider";
+import { TethrixLogo } from "../brand/Logo";
 
 const LINKS = [
   { to: "/", label: "Dashboard" },
@@ -17,7 +18,9 @@ export function Layout() {
   return (
     <div className="layout">
       <nav className="menu" aria-label="Main">
-        <p className="menu-title">Productivity app</p>
+        <p className="menu-title">
+          <TethrixLogo size={36} />
+        </p>
         <ul>
           {LINKS.map((link) => (
             <li key={link.to}>

@@ -150,6 +150,7 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | 2026-11-20 | B3 closed (smoke 17 passed). B3-09 and B3-10 theory deferred: the owner writes them at the end of the project, from memory |
 | 2026-11-20 | B4 design approved with all recommendations: `Authorization: Bearer`; JWT checked by API Gateway authorizer and FastAPI; Cognito prefix domain (custom domain needs CloudFront); frontend reads auth settings from `GET /api/v1/auth/config`; local OIDC server (`mock-oauth2-server`) in Compose; `make user-create` writes the profile; B4 adds only `GET /me`; echo protected |
 | 2026-11-20 | B3 decisions 9 to 11: body-hash code removed from the frontend; echo route kept until B5; throttling 10 requests a second, bursts of 20 |
+| 2026-11-21 | App name is Tethrix. Logo, palette (violet `#7C3AED`, ink `#111015`) and font (Sora, self-hosted) from the owner's logo canvas; design tokens in `styles.css` (`docs/brand.md`). Terraform names stay `productivity-app`. The owner will provide the component library design |
 | 2026-11-21 | GoDaddy lifted the hold on `satrix.in`. Domain switch approved with all recommendations (`docs/bolts/domain-switch.md`): `use_custom_domain = true`, default address off in a second apply, Cognito prefix domain kept, no HSTS preload, CAA kept. Route 53 zone adds 0.50 USD a month |
 | 2026-11-20 | B4 closed: Cognito Lite sign-in with authenticator app on AWS, JWT authorizer plus FastAPI checks, admin-created accounts. Journal entry and Cost Log balances carried over as owner tasks |
 
@@ -159,7 +160,6 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 |---|---|
 | Editor library: TipTap vs BlockNote | ADR in bolt B8 |
 | Journal encryption: SSE vs KMS key vs client-side | ADR in bolt B8 |
-| App name | Any time |
 | CloudFront back in front (only if enabled without the Paid plan) | New ADR, any time |
 
 ## Current status
@@ -342,3 +342,8 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   passed, sign-in works. T-032, T-036, T-038 Done; F-022 closed. Route 53 zone adds
   0.50 USD a month (Cost Log row). Next: bolt B5 (Todos), starting with a design
   proposal, when the owner says so.
+- 2026-11-21: #23 merged. Owner asked how code ships (answered: CI only checks today;
+  deploys are manual until B6). Brand written on branch `brand/tethrix`: Tethrix logo
+  component, favicon, design tokens with dark mode, Sora 5.3.0 self-hosted,
+  `docs/brand.md`. 61 frontend tests. Found: Dependabot cooldown is still 7 days
+  (rule is 14); fix offered.

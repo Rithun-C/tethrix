@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 
@@ -60,6 +60,14 @@ describe("App, signed in", () => {
     renderAt("/");
 
     expect(await screen.findByText("API: unreachable")).toBeInTheDocument();
+  });
+
+  it("shows the Tethrix logo in the menu, named for screen readers", async () => {
+    backend();
+    renderAt("/");
+
+    const menu = await screen.findByRole("navigation", { name: "Main" });
+    expect(within(menu).getByRole("img", { name: "Tethrix" })).toBeInTheDocument();
   });
 
   it("moves between pages through the menu", async () => {
