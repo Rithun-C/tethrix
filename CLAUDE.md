@@ -150,6 +150,7 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | 2026-11-20 | B3 closed (smoke 17 passed). B3-09 and B3-10 theory deferred: the owner writes them at the end of the project, from memory |
 | 2026-11-20 | B4 design approved with all recommendations: `Authorization: Bearer`; JWT checked by API Gateway authorizer and FastAPI; Cognito prefix domain (custom domain needs CloudFront); frontend reads auth settings from `GET /api/v1/auth/config`; local OIDC server (`mock-oauth2-server`) in Compose; `make user-create` writes the profile; B4 adds only `GET /me`; echo protected |
 | 2026-11-20 | B3 decisions 9 to 11: body-hash code removed from the frontend; echo route kept until B5; throttling 10 requests a second, bursts of 20 |
+| 2026-11-20 | B4 closed: Cognito Lite sign-in with authenticator app on AWS, JWT authorizer plus FastAPI checks, admin-created accounts. Journal entry and Cost Log balances carried over as owner tasks |
 
 ## Open decisions
 
@@ -325,3 +326,8 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   threat model (T-001, T-003, T-015, T-033, T-039 Done), deploy record, glossary,
   tracker. Owner's back-button and second-user checks passed. Waiting for the journal
   entry and approval to close B4.
+- 2026-11-20: #20 merged. Owner's back-button and second-user checks passed; owner
+  answered the theory note questions (feedback given on 1, 2, 3, 5, 6, 7, 8). B4 closed
+  and approved. Carried over as owner tasks: B4 journal entry (plus B1, B2, B3), Cost Log
+  balances for the B3 and B4 row. Next: bolt B5 (Todos), starting with a design
+  proposal. Not started.
