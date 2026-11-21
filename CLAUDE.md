@@ -360,3 +360,8 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   Two library colours changed for contrast (focus ring on light, delete button on
   dark). Next: owner's browser check, then merge, then the owner deploys brand and
   todos together.
+- 2026-11-22: #26 merged; owner deployed `c2ef066` (brand and todos): smoke passed,
+  todos work on `tethrix.satrix.in`. B5 pull request 3 written on branch `b5/close`:
+  theory note `docs/theory/dynamodb-keys-gsis-capacity.md`, F-024 and F-025, deploy
+  record, Cost Log row, tracker. Waiting for the owner's theory answers, journal entry
+  and approval to close B5. Next: B6 (CI/CD) design, when the owner says so.
