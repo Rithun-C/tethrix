@@ -287,6 +287,8 @@ they first come up. AWS service names are explained in the bolt where they are f
 | Route 53 | AWS's DNS service. |
 | Hosted zone | Route 53's container for the DNS records of one domain or subdomain. 0.50 USD a month. |
 | Delegation (DNS) | The parent domain hands one subdomain to other name servers with NS records, and keeps the rest. |
+| NS record | A DNS record that says which name servers answer for a name. Four of them at GoDaddy hand `tethrix.satrix.in` to Route 53. |
+| TTL (time to live) | How long DNS answers may be cached, in seconds. Why DNS changes take a while to show everywhere. |
 | Alias record | A Route 53 record that points a name at an AWS resource such as CloudFront. |
 | ACM | AWS Certificate Manager: issues and renews the TLS certificate for our domain. Public certificates are free. |
 | DNS validation | ACM proves we control a name by asking for a special DNS record; it stays in place so renewals are automatic. |

@@ -5,6 +5,7 @@
 #   - the page, its files and the API answer, with the security headers
 #   - caching is right: files for a year, index.html never
 #   - sign-in is set up: settings, Cognito's page, only our callback, no access without a token
+#   - with the domain on: the certificate is ours (Amazon) and the name is delegated
 #   - the side doors are closed (other files, plain HTTP, old TLS, the default address
 #     once the custom domain is on)
 #
@@ -15,6 +16,9 @@
 #   APP_HOST  where the app is served: tethrix.satrix.in, or the execute-api host name
 #   API_HOST  API Gateway's own execute-api host name (the same as APP_HOST while the
 #             custom domain is off)
+#
+# ALLOW_DEFAULT_ENDPOINT=1 turns the "default address still answers" failure into an INFO
+# line. Used once, during the first domain apply (deploy runbook, "Adding the domain").
 
 set -uo pipefail
 
@@ -110,6 +114,22 @@ if grep -q 'signInFormUsername\|name="username"' "$tmp/login.body"; then ok "Cog
 curl -s -o "$tmp/evil.body" --max-time 15 "$(login_url "https://evil.example/auth/callback")"
 if grep -q 'signInFormUsername\|name="username"' "$tmp/evil.body"; then bad "Cognito offered sign-in for a foreign callback"; else ok "Cognito refuses a foreign callback address"; fi
 
+echo "== Our name and certificate"
+
+if [ "$app_host" != "$api_host" ]; then
+  # curl checks by default that the certificate is valid and made for this exact name.
+  if curl -s -o /dev/null --max-time 15 "$base/"; then ok "certificate is valid for $app_host"; else bad "certificate check failed for $app_host"; fi
+  issuer=$(openssl s_client -connect "${app_host}:443" -servername "$app_host" </dev/null 2>/dev/null | openssl x509 -noout -issuer 2>/dev/null)
+  case "$issuer" in
+    *Amazon*) ok "certificate issued by Amazon (ACM, CAA record)" ;;
+    *) bad "unexpected certificate issuer: '$issuer'" ;;
+  esac
+  ns=$(dig +short NS "$app_host" @1.1.1.1 | grep -c awsdns || true)
+  if [ "$ns" -eq 4 ]; then ok "the name is delegated to Route 53 (4 awsdns name servers)"; else bad "expected 4 awsdns name servers, got $ns"; fi
+else
+  info "custom domain is off: no certificate or DNS checks"
+fi
+
 echo "== Side doors must be closed"
 
 code=$(status --path-as-is "$base/assets/%2e%2e/%2e%2e/etc/passwd")
@@ -134,7 +154,14 @@ fi
 
 if [ "$app_host" != "$api_host" ]; then
   code=$(status "https://${api_host}/api/v1/health")
-  if [ "$code" != "200" ]; then ok "default execute-api address is switched off ($code, T-038)"; else bad "default execute-api address still answers"; fi
+  if [ "$code" != "200" ]; then
+    ok "default execute-api address is switched off ($code, T-038)"
+  elif [ "${ALLOW_DEFAULT_ENDPOINT:-0}" = "1" ]; then
+    # Only during the first domain apply (disable_default_endpoint=false).
+    info "default execute-api address still answers (allowed for this run only)"
+  else
+    bad "default execute-api address still answers"
+  fi
 else
   info "custom domain is off: the execute-api address is the app's address for now"
 fi

@@ -22,7 +22,9 @@ resource "aws_apigatewayv2_api" "app" {
 
   # The default https://<id>.execute-api... address. Needed while there is no custom
   # domain; switched off with the domain, so our name is then the only way in (T-038).
-  disable_execute_api_endpoint = var.use_custom_domain
+  # Turned off in a second apply, once the domain works, so a slow certificate can
+  # never leave the app without an address (domain-switch design, decision 1).
+  disable_execute_api_endpoint = var.use_custom_domain && var.disable_default_endpoint
 }
 
 # Hands requests to Lambda. Payload format 2.0 is what the Web Adapter reads.

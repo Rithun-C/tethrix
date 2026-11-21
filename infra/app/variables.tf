@@ -18,10 +18,15 @@ variable "region" {
 variable "use_custom_domain" {
   description = "Serve the app on domain_name (ADR-0006). false = API Gateway's own execute-api address, with no Route 53 zone or certificate."
   type        = bool
-  # false since 2026-11-20: the registrar has the parent domain on hold (clientHold), so
-  # it cannot be delegated yet. Set to true once `dig +short NS satrix.in` answers again,
-  # then follow "Adding the domain later" in docs/runbooks/deploy-manual.md.
-  default = false
+  # true since 2026-11-21: the registrar lifted the hold on the parent domain. Set to
+  # false only to roll back to the execute-api address (docs/runbooks/deploy-manual.md).
+  default = true
+}
+
+variable "disable_default_endpoint" {
+  description = "With the custom domain on: switch off API Gateway's own execute-api address (T-038). false only during the first domain apply, until make smoke passes on the domain."
+  type        = bool
+  default     = true
 }
 
 variable "domain_name" {

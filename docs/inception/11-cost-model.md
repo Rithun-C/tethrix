@@ -56,7 +56,8 @@ Only the app and the final export and destroy may run after that.
 | Parameter Store | Standard parameters | Free | 0 |
 | Budgets | 2 budgets | Free | 0 |
 | Public IPv4, NAT Gateway | None | | 0 |
-| **Total** | | | **under 0.50** |
+| Route 53 (added 2026-11-21, domain switch) | One hosted zone for `tethrix.satrix.in`, a few thousand queries | Paid from credits; 0.50 USD per zone a month, 0.40 USD per million queries | 0.51 |
+| **Total** | | | **about 1.00** (under 0.50 before the domain) |
 
 The plan allows up to 2 USD a month, so there is room for growth. If the daily budget alert
 (1 USD a day) ever fires while no lab is running, something is wrong: open
