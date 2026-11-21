@@ -5,9 +5,12 @@
  * only change values here.
  */
 
-/* Sora, served from our own /assets (no Google request, CSP font-src 'self'). */
-@import "@fontsource/sora/latin-400.css";
-@import "@fontsource/sora/latin-500.css";
+/*
+ * Fonts, served from our own /assets (no Google request, CSP font-src 'self'):
+ * Permanent Marker for all text (owner's choice, 2026-11-22; one weight only),
+ * Sora SemiBold for the "tethrix" wordmark only, as drawn on the logo canvas.
+ */
+@import "@fontsource/permanent-marker/latin-400.css";
 @import "@fontsource/sora/latin-600.css";
 
 :root {
@@ -36,10 +39,13 @@
   --logo-word: var(--text);
   --logo-word-accent: var(--violet);
 
-  --font: "Sora", system-ui, sans-serif;
+  --font: "Permanent Marker", system-ui, sans-serif;
+  --font-logo: "Sora", system-ui, sans-serif;
 
   color-scheme: light;
   font-family: var(--font);
+  /* Permanent Marker has one weight; do not let the browser fake a bold one. */
+  font-synthesis-weight: none;
   line-height: 1.5;
   color: var(--text);
   background: var(--bg);
@@ -108,6 +114,7 @@ body {
 }
 
 .logo-word {
+  font-family: var(--font-logo);
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.045em;

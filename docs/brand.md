@@ -47,10 +47,23 @@ dark background about 6.5:1.
 
 ## Type
 
-Sora (SIL Open Font Licence), weights 400, 500 and 600, Latin only. Served from our own
-`/assets` through the pinned npm package `@fontsource/sora` 5.3.0, not from Google
-Fonts: the Content Security Policy allows fonts only from our own address, and visitors'
-browsers never contact Google.
+| Font | Used for | Weights | Licence |
+|---|---|---|---|
+| Permanent Marker | All text in the app (owner's choice, 2026-11-22) | 400 only | Apache 2.0 |
+| Sora | The "tethrix" wordmark in the logo, as on the canvas | 600 only | SIL Open Font Licence |
+
+Both are Google Fonts, Latin only, served from our own `/assets` through pinned npm
+packages (`@fontsource/permanent-marker` 5.3.0, `@fontsource/sora` 5.3.0), not from
+Google's servers. These are the same font files Google serves. Linking Google Fonts
+directly would mean two things: the Content Security Policy would have to allow
+`fonts.googleapis.com` and `fonts.gstatic.com`, and every visitor's browser would tell
+Google each time the app opens. Self-hosting avoids both.
+
+Permanent Marker has one weight, so bold text is turned off
+(`font-synthesis-weight: none`) instead of letting the browser smear a fake bold. It is a
+handwritten display font; if long text such as journal entries becomes hard to read, the
+component library design can give body text a plainer font and keep the marker for
+headings.
 
 ## What is not renamed
 
