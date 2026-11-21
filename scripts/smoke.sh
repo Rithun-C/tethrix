@@ -100,11 +100,12 @@ case "$(header content-security-policy "$tmp/page")" in
   *) bad "CSP connect-src does not name Cognito" ;;
 esac
 
-for path in /api/v1/me /api/v1/nope; do
+for path in /api/v1/me /api/v1/todos /api/v1/todos/01JD0000000000000000000000 /api/v1/nope; do
   expect_status "$path without a token is refused" 401 "$(status "$base$path")"
 done
 expect_status "a made-up token is refused" 401 "$(status -H 'Authorization: Bearer abc.def.ghi' "$base/api/v1/me")"
-expect_status "POST without a token is refused" 401 "$(status -X POST "$base/api/v1/echo" --data x)"
+expect_status "adding a todo without a token is refused" 401 "$(status -X POST -H 'Content-Type: application/json' "$base/api/v1/todos" --data '{"title":"x"}')"
+expect_status "deleting a todo without a token is refused" 401 "$(status -X DELETE "$base/api/v1/todos/01JD0000000000000000000000")"
 expect_status "the old X-Auth-Token header does not count" 401 "$(status -H 'X-Auth-Token: abc.def.ghi' "$base/api/v1/me")"
 
 # Cognito's sign-in page for our own callback, and a refusal for anyone else's (T-039).

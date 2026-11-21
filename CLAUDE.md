@@ -150,6 +150,7 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
 | 2026-11-20 | B3 closed (smoke 17 passed). B3-09 and B3-10 theory deferred: the owner writes them at the end of the project, from memory |
 | 2026-11-20 | B4 design approved with all recommendations: `Authorization: Bearer`; JWT checked by API Gateway authorizer and FastAPI; Cognito prefix domain (custom domain needs CloudFront); frontend reads auth settings from `GET /api/v1/auth/config`; local OIDC server (`mock-oauth2-server`) in Compose; `make user-create` writes the profile; B4 adds only `GET /me`; echo protected |
 | 2026-11-20 | B3 decisions 9 to 11: body-hash code removed from the frontend; echo route kept until B5; throttling 10 requests a second, bursts of 20 |
+| 2026-11-22 | B5 (Todos) design approved: `GET /todos/{id}` for notes; IDs from `python-ulid` (4.1.0); UI from the owner's component library Satrix UI, with Sansation kept as the font; optimistic updates; delete confirmed in the page; three pull requests (`docs/bolts/B5-todos.md`). Brand and todos deploy together |
 | 2026-11-21 | App name is Tethrix. Logo and palette (violet `#7C3AED`, ink `#111015`) from the owner's logo canvas; font Sansation (owner's choice 2026-11-22, self-hosted, also in the wordmark); design tokens in `styles.css` (`docs/brand.md`). Terraform names stay `productivity-app`. The owner will provide the component library design |
 | 2026-11-21 | GoDaddy lifted the hold on `satrix.in`. Domain switch approved with all recommendations (`docs/bolts/domain-switch.md`): `use_custom_domain = true`, default address off in a second apply, Cognito prefix domain kept, no HSTS preload, CAA kept. Route 53 zone adds 0.50 USD a month |
 | 2026-11-20 | B4 closed: Cognito Lite sign-in with authenticator app on AWS, JWT authorizer plus FastAPI checks, admin-created accounts. Journal entry and Cost Log balances carried over as owner tasks |
@@ -347,3 +348,9 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   component, favicon, design tokens with dark mode, self-hosted font (Sansation 5.3.0 by the owner's choice),
   `docs/brand.md`. 61 frontend tests. Found: Dependabot cooldown is still 7 days
   (rule is 14); fix offered.
+- 2026-11-22: #24 merged (brand, font Sansation, not deployed yet: it ships with B5). B5
+  design approved; component library "Satrix UI" received. B5 pull request 1 written on
+  branch `b5/backend`: todos repository and five routes, `python-ulid` 4.1.0, echo route
+  removed, Lambda gets PutItem, DeleteItem and Query on GSI1 only, T-043 (cursor) added.
+  212 backend tests pass; every scanner passes. Next: pull request 2 (components and the
+  Todos page).

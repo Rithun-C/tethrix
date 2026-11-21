@@ -24,8 +24,11 @@ module "backend" {
     COGNITO_DOMAIN       = local.cognito_domain_url
   }
 
-  # B4: the sign-in check reads the user's profile item, and nothing else (SR-70). B5
-  # adds the todo actions and the index.
-  dynamodb_actions       = ["dynamodb:GetItem"]
+  # SR-70, B5 design section 6. Items: read the profile and one todo, add or rewrite a
+  # todo (PutItem with a version condition; no UpdateItem needed), delete one. Lists:
+  # Query on GSI1 only. No Scan, no batch writes, no table management, no wildcard.
+  dynamodb_actions       = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"]
   dynamodb_resource_arns = [module.table.arn]
+  dynamodb_index_actions = ["dynamodb:Query"]
+  dynamodb_index_arns    = module.table.index_arns
 }

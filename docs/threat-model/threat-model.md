@@ -104,7 +104,7 @@ Status: Planned (mitigation designed, not built yet), Done, Accepted.
 | ID | Where | Threat | Risk | Mitigation | Verified by | Bolt | Status |
 |---|---|---|---|---|---|---|---|
 | T-006 | Pages | Stored XSS: saved content runs script in the browser | High | Server checks content matches the editor schema; no raw HTML rendering; strict CSP; safe link handling (US-42) | XSS payload test list | B8 | Planned |
-| T-007 | API input | Oversized or malformed input | Medium | Validation on every field; body size limit; 400 errors | Unit tests | B5 onward | Planned |
+| T-007 | API input | Oversized or malformed input | Medium | Validation on every field; body size limit; 400 errors. B5: todo models refuse unknown fields (`extra="forbid"`), strict types, trimmed one-line titles, real dates 2000 to 2100, IDs checked as ULIDs before any key is built | `tests/test_todos_validation.py` (64 cases), `tests/test_limits.py` | B5 onward | In progress (todos done; habits, journal, pages follow) |
 | T-008 | Supply chain | Malicious or vulnerable dependency or base image | High | Exact pins and lockfiles; image digests; pip-audit, npm audit, Trivy in CI; check every new package is the real one | CI gates | B1, B6 | Done (B1: pins, digests, Trivy. B2: pip-audit, npm audit, install scripts off, cooldowns) |
 | T-009 | Terraform state | State changed or deleted | Medium | Private, versioned, encrypted bucket; HTTPS only; locking; `prevent_destroy` | Done in G-06 | G-06 | Done |
 | T-010 | Pages, journal | Two tabs silently overwrite each other | Low | Optimistic concurrency, 409 on conflict (I-03) | Unit test | B8 | Planned |
@@ -120,7 +120,7 @@ Status: Planned (mitigation designed, not built yet), Done, Accepted.
 
 | ID | Where | Threat | Risk | Mitigation | Verified by | Bolt | Status |
 |---|---|---|---|---|---|---|---|
-| T-013 | API, DynamoDB (TB3) | IDOR: user A reads user B's data | High | Every key built from the token's `sub` (`CurrentUser`); one partition per user; 404 for others' items (I-08); `sub` format checked so it cannot change a key | Two-user harness (`alice`, `bob` fixtures); `tests/test_idor.py` fails if a route with an ID has no two-user test | B4 onward | In progress (harness built; rule enforced from B5) |
+| T-013 | API, DynamoDB (TB3) | IDOR: user A reads user B's data | High | Every key built from the token's `sub` (`CurrentUser`); one partition per user; 404 for others' items (I-08); `sub` format checked so it cannot change a key | Two-user harness (`alice`, `bob` fixtures); `tests/test_idor.py` fails if a route with an ID has no two-user test | B4 onward | In progress (rule enforced: todo ID routes have two-user tests for read, change and delete; a planted leak made them fail) |
 | T-014 | Logs, errors | Journal text appears in logs, traces or error messages | High | Never log request or response bodies; redaction; generic errors (US-33) | Test that greps logs for a marker string | B8 | Planned |
 | T-015 | Browser | Tokens stolen through an XSS bug | Medium | Access token in memory only; refresh token in the tab's `sessionStorage` without the access or ID token (`SessionUserStore`); nothing in `localStorage`; short lifetimes; idle sign-out after 60 minutes; CSP; XSS defences (T-006) | `sessionUserStore.test.ts`, `settings.test.ts`, idle tests in `App.test.tsx` | B4 | Done for B4 (memory and `sessionStorage` only, idle sign-out); XSS defence continues in B8 |
 | T-016 | Repo | Secret, key or account ID committed to the public repo | High | gitleaks in pre-commit and CI; no secrets in code; Parameter Store for any secret | CI gate | B1 | Done |
@@ -137,7 +137,7 @@ the app down.
 | ID | Where | Threat | Risk | Mitigation | Verified by | Bolt | Status |
 |---|---|---|---|---|---|---|---|
 | T-021 | API | Request flood burns credits | Medium | API Gateway throttling (10 a second, bursts of 20) refuses a flood with 429 before Lambda runs (ADR-0007); since B4 the JWT authorizer refuses tokenless `/api/*` calls before Lambda runs; DynamoDB provisioned capacity caps cost; Lambda concurrency limit; budgets alert | Load test in B11-08 | B3, B11 | Partly done (throttling in B3; load test in B11) |
-| T-022 | API | Expensive requests: huge bodies, unbounded lists | Medium | Size limits; pagination (max 50); 10-second Lambda timeout | Unit tests | B5 onward | Planned |
+| T-022 | API | Expensive requests: huge bodies, unbounded lists | Medium | Size limits; pagination (max 50); 10-second Lambda timeout. B5: todo lists are one Query of at most 50 items, never a Scan | `tests/test_todos.py` (51 items come in two pages), `tests/test_limits.py` | B5 onward | In progress (todos done) |
 | T-023 | AWS account | Forgotten lab resources | Medium | Session sweep, emergency runbook, budgets | Done in G-07, G-12, G-13 | Week 0 | Done |
 
 ### Elevation of privilege
@@ -163,6 +163,7 @@ the app down.
 | T-040 | Sign-in | Phishing: the sign-in page is on `amazoncognito.com`, not our domain, so the address alone proves little | Low | Few, known users; TOTP MFA means a stolen password alone is not enough. A custom sign-in domain needs CloudFront (ADR-0007) | None | B4 | Accepted |
 | T-041 | Local auth | The local OIDC server image is tampered with | Low | Pinned by digest; used only on the laptop; the app refuses it in Lambda (T-004) | Digest in `compose.yaml` | B4 | Done |
 | T-042 | API | Junk tokens with random key IDs make the app flood the issuer with key requests | Low | At most one key refetch per 5 minutes; old keys kept if a fetch fails | `tests/test_auth.py` | B4 | Done |
+| T-043 | API, DynamoDB | A crafted "load more" cursor makes a list query start in another user's partition | Medium | The cursor holds only sort-key parts; the partition is always rebuilt from the token; a cursor outside the view's range or for another view is a 400 | `tests/test_todos_validation.py` (10 bad cursors), `tests/test_idor.py` (alice's cursor used by bob) | B5 | Done |
 
 ## 5. Summary
 

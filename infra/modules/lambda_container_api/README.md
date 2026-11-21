@@ -18,6 +18,7 @@ It has no function URL: nothing can call it until the caller adds an
 | `reserved_concurrency` | -1 | -1 = no reservation (SR-72) |
 | `environment` | {} | Never secrets |
 | `log_retention_days` | 14 | SR-43 |
-| `dynamodb_actions`, `dynamodb_resource_arns` | [] | Exact actions only, no wildcards (SR-70) |
+| `dynamodb_actions`, `dynamodb_resource_arns` | [] | Item actions on the table. Exact actions only, no wildcards (SR-70) |
+| `dynamodb_index_actions`, `dynamodb_index_arns` | [] | Actions on indexes, usually only `dynamodb:Query`. Own statement, so item actions never reach an index |
 
 Outputs: `function_name`, `function_arn`, `invoke_arn`, `role_name`, `log_group_name`.
