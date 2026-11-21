@@ -287,6 +287,7 @@ Not part of a normal session: the app is always on. To take everything down:
 
 | Date | Commit | Smoke result | Notes |
 |---|---|---|---|
+| 2026-11-21 | 899c7cd | Passed twice, 0 failed | Domain switch: zone, NS records at GoDaddy, first apply with the default address on (`ALLOW_DEFAULT_ENDPOINT=1 make smoke`), second apply turned it off (`make smoke`). Sign-in on `tethrix.satrix.in` works |
 | 2026-11-20 | e8a2622 | Passed, 0 failed | B4 sign-in: Cognito pool, authorizer, routes. First user created; sign-in with authenticator app works. Owner: "authentication worked as expected" |
 | 2026-11-20 | 97e3d10 | 17 passed, 0 failed | First deploy on API Gateway, on the default execute-api address. Owner: "works as expected" |
 | 2026-11-20 | e1c08a7 | Not reached | First apply stopped at the CloudFront distribution (account needs a payment method and the Paid plan for CloudFront). Switched to API Gateway (ADR-0007) |

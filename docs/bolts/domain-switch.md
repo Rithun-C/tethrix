@@ -1,7 +1,7 @@
 # Design: switch on tethrix.satrix.in
 
-- Status: Approved 2026-11-21 with all four recommendations. Written on branch
-  `domain/switch-on`; waiting for the owner's deploy
+- Status: Done 2026-11-21. Approved with all four recommendations, merged as #22,
+  deployed by the owner (`899c7cd`): both smoke runs passed, sign-in works
 - Decisions it builds on: ADR-0006 (Route 53 zone for the subdomain only), ADR-0007
   (API Gateway in front), ADR-0003 (Cognito prefix domain)
 - Threats it closes: T-036 (old TLS on the default address), T-038 (default address
