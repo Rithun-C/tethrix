@@ -72,7 +72,24 @@ variable "dynamodb_actions" {
 }
 
 variable "dynamodb_resource_arns" {
-  description = "Table and index ARNs the actions apply to."
+  description = "Table ARNs the dynamodb_actions apply to."
+  type        = list(string)
+  default     = []
+}
+
+variable "dynamodb_index_actions" {
+  description = "Exact DynamoDB actions allowed on the indexes, usually only dynamodb:Query. No wildcards."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for a in var.dynamodb_index_actions : can(regex("^dynamodb:[A-Za-z]+$", a))])
+    error_message = "List exact DynamoDB actions, such as dynamodb:Query. Wildcards are not allowed (SR-70)."
+  }
+}
+
+variable "dynamodb_index_arns" {
+  description = "Index ARNs the dynamodb_index_actions apply to."
   type        = list(string)
   default     = []
 }

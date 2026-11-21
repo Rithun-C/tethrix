@@ -1,13 +1,29 @@
-"""SR-31: bodies over the limit are refused with 413, in the standard error format."""
+"""SR-31: bodies over the limit are refused with 413, in the standard error format.
+
+The limit sits in front of every route. These tests use a route that exists only in
+the test app and answers how many bytes arrived (B3's echo route did this until B5).
+"""
 
 from collections.abc import Iterator
 
+import pytest
+from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from api.limits import DEFAULT_MAX_BODY_BYTES
 from tests.conftest import LogReader
 
-ECHO = "/api/v1/echo"
+ECHO = "/api/v1/test-body-size"
+
+
+@pytest.fixture(autouse=True)
+def _byte_counter(app: FastAPI) -> None:
+    async def count(request: Request) -> dict[str, int]:
+        return {"received_bytes": len(await request.body())}
+
+    app.add_api_route(ECHO, count, methods=["POST"])
+
+
 TOO_LARGE = {"error": {"code": "too_large", "message": "The request is too large."}}
 
 

@@ -19,8 +19,11 @@ from api.auth import OPEN_API_ROUTES
 
 PROTECTED_ROUTES = {
     ("GET", "/api/v1/me"),
-    # Temporary, removed in B5. Answers only a byte count (routes/echo.py).
-    ("POST", "/api/v1/echo"),
+    ("GET", "/api/v1/todos"),
+    ("POST", "/api/v1/todos"),
+    ("GET", "/api/v1/todos/{todo_id}"),
+    ("PATCH", "/api/v1/todos/{todo_id}"),
+    ("DELETE", "/api/v1/todos/{todo_id}"),
 }
 
 

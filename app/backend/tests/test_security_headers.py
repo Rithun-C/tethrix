@@ -11,7 +11,7 @@ from api.security_headers import SECURITY_HEADERS
     [
         ("GET", "/api/v1/health"),  # a normal answer
         ("GET", "/api/v1/nope"),  # an error answer
-        ("POST", "/api/v1/echo"),
+        ("POST", "/api/v1/todos"),  # refused: no sign-in
     ],
 )
 def test_every_response_has_the_security_headers(
@@ -24,7 +24,7 @@ def test_every_response_has_the_security_headers(
 
 
 def test_a_body_limit_refusal_also_has_them(client: TestClient) -> None:
-    response = client.post("/api/v1/echo", content=b"x" * 20_000)
+    response = client.post("/api/v1/todos", content=b"x" * 20_000)
 
     assert response.status_code == 413
     assert (

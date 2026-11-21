@@ -45,6 +45,7 @@ def _todo(
         "completed": completed_at is not None,
         "createdAt": _CREATED,
         "updatedAt": completed_at or _CREATED,
+        "version": 1,
     }
     if due:
         item["dueDate"] = due
@@ -59,15 +60,22 @@ def _todo(
     return item
 
 
+# Todo IDs are ULIDs, like the ones the API makes (B5), so the seed todos can be opened,
+# edited and deleted in the app.
 def seed_items() -> list[dict[str, Any]]:
     return [
         _profile(ALICE, "Asia/Kolkata"),
-        _todo(ALICE, "a1", "Alice: water the plants", due="2026-11-20"),
-        _todo(ALICE, "a2", "Alice: read one chapter"),
-        _todo(ALICE, "a3", "Alice: pay the electricity bill", completed_at="2026-11-10T08:30:00Z"),
+        _todo(ALICE, "01JC0000000000000000000A01", "Alice: water the plants", due="2026-11-20"),
+        _todo(ALICE, "01JC0000000000000000000A02", "Alice: read one chapter"),
+        _todo(
+            ALICE,
+            "01JC0000000000000000000A03",
+            "Alice: pay the electricity bill",
+            completed_at="2026-11-10T08:30:00.000Z",
+        ),
         _profile(BOB, "Europe/London"),
-        _todo(BOB, "b1", "Bob: book the dentist", due="2026-11-18"),
-        _todo(BOB, "b2", "Bob: clean the bike"),
+        _todo(BOB, "01JC0000000000000000000B01", "Bob: book the dentist", due="2026-11-18"),
+        _todo(BOB, "01JC0000000000000000000B02", "Bob: clean the bike"),
     ]
 
 

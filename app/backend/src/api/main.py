@@ -1,6 +1,7 @@
 """Builds the FastAPI app. uvicorn loads `app` from this module."""
 
 import logging
+from datetime import UTC, datetime
 
 from fastapi import Depends, FastAPI
 
@@ -12,8 +13,9 @@ from api.errors import install_error_handlers
 from api.limits import BodyLimitMiddleware
 from api.logs import setup_logging
 from api.middleware import RequestLogMiddleware
-from api.routes import auth_config, echo, health, me
+from api.routes import auth_config, health, me, todos
 from api.security_headers import SecurityHeadersMiddleware
+from api.todos import DynamoTodoStore
 
 API_PREFIX = "/api/v1"
 
@@ -48,7 +50,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         dependencies=[Depends(auth_gate)],
     )
     app.state.verifier = build_verifier(settings)
-    app.state.profiles = DynamoProfileStore(get_table(settings))
+    table = get_table(settings)
+    app.state.profiles = DynamoProfileStore(table)
+    app.state.todos = DynamoTodoStore(table)
+    # One clock for the whole app, so tests can freeze time ("today" in a time zone).
+    app.state.clock = lambda: datetime.now(UTC)
     app.state.auth_config = auth_config.build_auth_config(settings)
 
     install_error_handlers(app)
@@ -72,7 +78,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     health.add_routes(app, API_PREFIX)
     auth_config.add_routes(app, API_PREFIX)
     me.add_routes(app, API_PREFIX)
-    echo.add_routes(app, API_PREFIX)  # temporary, removed in B5; needs a sign-in since B4
+    todos.add_routes(app, API_PREFIX)
 
     # The React app, only where its build is in the image (AWS, kind). Must come after
     # every API route: it ends with a catch-all.

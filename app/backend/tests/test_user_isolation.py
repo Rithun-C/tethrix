@@ -73,7 +73,10 @@ def test_dated_todos_sort_before_undated_ones(table: "Table") -> None:
         KeyConditionExpression=Key("GSI1PK").eq(f"{user_pk(ALICE)}#TODO#OPEN"),
     )["Items"]
 
-    assert [item["SK"] for item in items] == ["TODO#a1", "TODO#a2"]
+    assert [item["SK"] for item in items] == [
+        "TODO#01JC0000000000000000000A01",
+        "TODO#01JC0000000000000000000A02",
+    ]
 
 
 def test_index_does_not_copy_fields_it_should_not(table: "Table") -> None:

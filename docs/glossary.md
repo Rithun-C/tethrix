@@ -46,6 +46,7 @@ they first come up. AWS service names are explained in the bolt where they are f
 | Idempotent | Safe to repeat: doing it twice has the same effect as once. |
 | ULID | A random ID that also sorts by creation time. |
 | Pagination | Returning a long list in pages, with a cursor to fetch the next page. |
+| Optimistic update | Changing the screen before the server answers, and putting it back if the server refuses. Feels instant (B5 todos). |
 | Optimistic concurrency | Saving with the version you started from, so a save is refused (409) if someone saved in between, instead of silently overwriting. |
 
 ## DynamoDB terms
@@ -64,6 +65,9 @@ they first come up. AWS service names are explained in the bolt where they are f
 | Single-table design | Storing several kinds of items in one table, told apart by their keys. |
 | Provisioned capacity | Paying for a fixed number of read and write units per second. Ours stays inside the free tier. |
 | Throttling | AWS slowing down requests that go over the capacity you set. |
+| Conditional write | A write DynamoDB does only if a condition holds, for example "only if this item exists" or "only if its version is still 3". Otherwise it refuses with `ConditionalCheckFailedException`. |
+| Cursor (`LastEvaluatedKey`) | Where a Query stopped. DynamoDB returns it when there is more; sending it back as `ExclusiveStartKey` continues from there. Our API hands out only its sort-key parts (T-043). |
+| Eventually consistent read | A read that may not yet show a write made a moment ago. Index reads are always like this; item reads can ask for a strongly consistent read instead. |
 
 ## AWS edge, sign-in and packaging terms
 
@@ -192,6 +196,7 @@ they first come up. AWS service names are explained in the bolt where they are f
 | Kubernetes | Open-source software that runs and connects many containers across many servers. Practised locally with kind. |
 | Scale to zero | When nothing runs, and nothing is charged, while there are no requests. Lambda does this; ECS and EKS do not. |
 | Repository (repo) | A project folder whose full change history is kept by git. |
+| Repository (in code) | The one module that talks to the database for one kind of item, for example `api/todos.py`. Routes call it; nothing else builds keys. |
 | Commit | One saved change in git, with a message and an author. |
 | Branch | A separate line of work in a repo. `main` is the line that counts. |
 | Pull request (PR) | A request on GitHub to merge a branch into `main`. Checks run on it first. |

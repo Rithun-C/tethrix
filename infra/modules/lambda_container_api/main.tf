@@ -64,6 +64,18 @@ data "aws_iam_policy_document" "permissions" {
       resources = var.dynamodb_resource_arns
     }
   }
+
+  # Indexes get their own statement, so item actions never apply to an index ARN and
+  # Query never applies to the table itself.
+  dynamic "statement" {
+    for_each = length(var.dynamodb_index_actions) > 0 ? [1] : []
+
+    content {
+      sid       = "QueryAppIndexes"
+      actions   = var.dynamodb_index_actions
+      resources = var.dynamodb_index_arns
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "this" {
