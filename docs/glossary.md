@@ -41,6 +41,7 @@ they first come up. AWS service names are explained in the bolt where they are f
 | Domain model | The things the app knows about (todo, habit, page...), their fields and how they relate, independent of any database. |
 | API | Application Programming Interface. Here: the list of web addresses the frontend calls to read and change data. |
 | REST | A common API style: each kind of thing has its own address, and the HTTP method (GET, POST, PUT, PATCH, DELETE) says what to do. |
+| Design token | A named value for a design choice, such as `--violet` for the brand colour. Components use the name, so a change in one place changes the whole app. |
 | Endpoint | One method plus path in the API, such as `POST /todos`. |
 | Idempotent | Safe to repeat: doing it twice has the same effect as once. |
 | ULID | A random ID that also sorts by creation time. |

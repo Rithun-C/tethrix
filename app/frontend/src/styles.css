@@ -1,15 +1,128 @@
-/* Plain CSS for the skeleton. Real styling is decided with real screens in B5. */
+/*
+ * Tethrix styles. Colours come from the owner's logo canvas, the font is the owner's
+ * choice
+ * (docs/brand.md). Every colour is a design token below; components use the tokens,
+ * never a raw colour, so the component library (owner's design, B5 on) and dark mode
+ * only change values here.
+ */
+
+/*
+ * Sansation for all text and the wordmark (owner's choice, 2026-11-22), served from
+ * our own /assets (no Google request, CSP font-src 'self'). Regular and Bold only.
+ */
+@import "@fontsource/sansation/latin-400.css";
+@import "@fontsource/sansation/latin-700.css";
 
 :root {
-  font-family: system-ui, sans-serif;
+  /* Brand */
+  --violet: #7c3aed;
+  --violet-deep: #592aab;
+  --lavender: #aa7ff3;
+
+  /* Light theme */
+  --bg: #ffffff;
+  --surface: #f7f5fa;
+  --text: #111015;
+  --text-muted: #5b5762;
+  --border: #e2dee8;
+  --accent: var(--violet);
+  --accent-text: #ffffff;
+  --accent-soft: #f2ebfd;
+  --focus: var(--violet);
+  --ok: #1a7f37;
+  --error: #cf222e;
+
+  /* Logo parts that change with the background */
+  --logo-line: var(--text);
+  /* The canyon: ink on light; cut out in the background colour on dark. */
+  --logo-cut: var(--text);
+  --logo-word: var(--text);
+  --logo-word-accent: var(--violet);
+
+  --font: "Sansation", system-ui, sans-serif;
+
+  color-scheme: light;
+  font-family: var(--font);
   line-height: 1.5;
-  color: #1f2328;
-  background: #ffffff;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* Reversed colours from the canvas's "on dark" artboard. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0a10;
+    --surface: #15131b;
+    --text: #f3effa;
+    --text-muted: #a39fad;
+    --border: #2a2733;
+    --accent-soft: #22143c;
+    --focus: var(--lavender);
+    --ok: #3fb950;
+    --error: #f85149;
+    --logo-cut: var(--bg);
+    --logo-word-accent: var(--lavender);
+
+    color-scheme: dark;
+  }
 }
 
 body {
   margin: 0;
 }
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---- Logo ---- */
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo-line,
+.logo-cut {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.logo-line {
+  stroke: var(--logo-line);
+}
+
+.logo-cut {
+  stroke: var(--logo-cut);
+}
+
+.logo-deep {
+  fill: var(--violet-deep);
+}
+
+.logo-violet {
+  fill: var(--violet);
+}
+
+.logo-light {
+  fill: var(--lavender);
+}
+
+.logo-word {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  color: var(--logo-word);
+}
+
+.logo-word-accent {
+  color: var(--logo-word-accent);
+}
+
+/* ---- Layout ---- */
 
 .layout {
   display: flex;
@@ -19,12 +132,12 @@ body {
 .menu {
   width: 12rem;
   padding: 1rem;
-  border-right: 1px solid #d0d7de;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .menu-title {
-  margin: 0 0 1rem;
-  font-weight: 600;
+  margin: 0 0 1.25rem;
 }
 
 .menu ul {
@@ -38,29 +151,45 @@ body {
   padding: 0.25rem 0.5rem;
   color: inherit;
   text-decoration: none;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 .menu a:hover {
-  background: #f0f2f4;
+  background: var(--accent-soft);
 }
 
 /* React Router adds class "active" to the link of the current page. */
 .menu a.active {
-  background: #e6e9ec;
-  font-weight: 600;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 700;
 }
 
 .menu-account {
   margin-top: 2rem;
   padding-top: 1rem;
-  border-top: 1px solid #d0d7de;
+  border-top: 1px solid var(--border);
 }
 
 .menu-user {
   margin: 0 0 0.5rem;
   font-size: 0.875rem;
+  color: var(--text-muted);
   overflow-wrap: anywhere;
+}
+
+button {
+  font: inherit;
+  padding: 0.375rem 0.875rem;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-text);
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--violet-deep);
 }
 
 .content {
@@ -69,9 +198,9 @@ body {
 }
 
 .api-status-ok {
-  color: #1a7f37;
+  color: var(--ok);
 }
 
 .api-status-unreachable {
-  color: #cf222e;
+  color: var(--error);
 }
