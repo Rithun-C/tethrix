@@ -121,10 +121,10 @@ describe("apiFetch with a signed-in user (B4)", () => {
     setAuthHooks({ accessToken: () => "abc.def.ghi", onUnauthorized: vi.fn() });
     const fetchMock = mockFetch(jsonResponse(200, {}));
 
-    await apiFetch("/echo", { method: "POST", body: { a: 1 } });
+    await apiFetch("/todos", { method: "POST", body: { title: "a" } });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/v1/echo",
+      "/api/v1/todos",
       expect.objectContaining({
         headers: { "Content-Type": "application/json", Authorization: "Bearer abc.def.ghi" },
       }),

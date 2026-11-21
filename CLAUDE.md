@@ -354,3 +354,9 @@ The full plan and schedule are in `docs/project-plan.md`. Tasks are tracked in
   removed, Lambda gets PutItem, DeleteItem and Query on GSI1 only, T-043 (cursor) added.
   212 backend tests pass; every scanner passes. Next: pull request 2 (components and the
   Todos page).
+- 2026-11-22: #25 merged. B5 pull request 2 written on branch `b5/frontend`: Satrix UI
+  components in `src/ui/`, tokens in `styles.css`, the Todos page with optimistic
+  updates, the menu restyled. 76 frontend tests; live API check on `make up` passed.
+  Two library colours changed for contrast (focus ring on light, delete button on
+  dark). Next: owner's browser check, then merge, then the owner deploys brand and
+  todos together.

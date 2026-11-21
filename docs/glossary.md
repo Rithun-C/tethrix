@@ -42,6 +42,10 @@ they first come up. AWS service names are explained in the bolt where they are f
 | API | Application Programming Interface. Here: the list of web addresses the frontend calls to read and change data. |
 | REST | A common API style: each kind of thing has its own address, and the HTTP method (GET, POST, PUT, PATCH, DELETE) says what to do. |
 | Design token | A named value for a design choice, such as `--violet` for the brand colour. Components use the name, so a change in one place changes the whole app. |
+| Component library | A set of ready-made interface pieces (buttons, fields, tabs) with fixed looks and rules. Ours is the owner's "Satrix UI" (B5). |
+| Orbit corner | Satrix UI's shape rule: every rectangle has one wider corner at the top right, for example 6, 12, 6, 6 px on controls. |
+| Moon (in the UI) | Satrix UI's marker for "you are here" or a state: a small dot on a line, such as beside the current menu item. Never decoration. |
+| Focus ring | The outline that shows which control the keyboard is on. It needs 3:1 contrast with what is around it (WCAG). |
 | Endpoint | One method plus path in the API, such as `POST /todos`. |
 | Idempotent | Safe to repeat: doing it twice has the same effect as once. |
 | ULID | A random ID that also sorts by creation time. |

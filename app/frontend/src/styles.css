@@ -1,9 +1,11 @@
 /*
  * Tethrix styles. Colours come from the owner's logo canvas, the font is the owner's
- * choice
- * (docs/brand.md). Every colour is a design token below; components use the tokens,
- * never a raw colour, so the component library (owner's design, B5 on) and dark mode
- * only change values here.
+ * choice (docs/brand.md), and shapes, sizes and components from the owner's component
+ * library Satrix UI (docs/bolts/B5-todos.md section 15).
+ *
+ * Every value is a design token below; components use the tokens, never a raw value,
+ * so dark mode only changes values here. The CSP allows no inline styles
+ * (style-src 'self'), so all styling lives in this file.
  */
 
 /*
@@ -14,23 +16,42 @@
 @import "@fontsource/sansation/latin-700.css";
 
 :root {
-  /* Brand */
+  /* ---- Brand ---- */
   --violet: #7c3aed;
   --violet-deep: #592aab;
   --lavender: #aa7ff3;
 
-  /* Light theme */
-  --bg: #ffffff;
-  --surface: #f7f5fa;
-  --text: #111015;
+  /* ---- Day side (light) ---- */
+  --bg: #ffffff; /* ground */
+  --surface: #f7f5fa; /* muted: the menu, quiet panels */
+  --raised: #ffffff; /* cards, inputs, the current menu item */
+  --text: #111015; /* ink */
   --text-muted: #5b5762;
   --border: #e2dee8;
+  --border-strong: #cfc9d8; /* controls */
+  --border-hover: #8a8594; /* also the checkbox edge: 3:1 on white */
   --accent: var(--violet);
   --accent-text: #ffffff;
-  --accent-soft: #f2ebfd;
-  --focus: var(--violet);
-  --ok: #1a7f37;
-  --error: #cf222e;
+  --accent-soft: #f2ebfd; /* violet tint */
+  --accent-soft-text: var(--violet-deep); /* 8.3:1 on the tint */
+  /* The orbit ring (focus). The canvas draws it lavender, which is 2.98:1 on white, under
+     the 3:1 a focus ring needs, so it is violet on light (5.7:1) and lavender on dark. */
+  --ring: var(--violet);
+  --moon: var(--violet); /* "you are here" */
+  --ok: #15803d;
+  --error: #dc2626;
+  --danger-button: #dc2626; /* white on it 4.8:1, in both themes */
+  --danger-button-hover: #b91c1c;
+  --danger-text: #b91c1c;
+  --danger-soft: #feecec;
+  --danger-border: #f5c2c2;
+  --danger-panel: #fef5f5;
+  --danger-disc: #fde1e1;
+  --danger-title: #7f1d1d;
+  --danger-body: #991b1b;
+  --disabled-bg: #f7f5fa;
+  --disabled-border: #a39fad;
+  --shade: rgb(17 16 21 / 20%); /* the planet's darker half under a button */
 
   /* Logo parts that change with the background */
   --logo-line: var(--text);
@@ -39,27 +60,74 @@
   --logo-word: var(--text);
   --logo-word-accent: var(--violet);
 
+  /* ---- Shape: the orbit corner (one wider corner, top right) ---- */
+  --radius-xs: 3px 7px 3px 3px; /* badges, checkbox */
+  --radius-sm: 6px 12px 6px 6px; /* controls */
+  --radius-sm-small: 5px 10px 5px 5px; /* small controls */
+  --radius-md: 8px 24px 8px 8px; /* surfaces */
+
+  /* ---- Spacing, 4px base ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* ---- Sizes ---- */
+  --control-sm: 32px;
+  --control-md: 40px;
+  --sidebar-width: 248px;
+
+  /* ---- Elevation: four orbits ---- */
+  --elevation-1: none; /* cards: border only */
+  --elevation-2: 0 6px 16px rgb(17 16 21 / 8%); /* menus, toasts */
+  --elevation-3: 0 24px 48px rgb(17 16 21 / 16%); /* dialogs */
+
+  /* ---- Motion: glide and settle, never bounce ---- */
+  --motion-press: 80ms cubic-bezier(0.2, 0, 0, 1);
+  --motion-hover: 140ms cubic-bezier(0.2, 0, 0, 1);
+  --motion-move: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+
   --font: "Sansation", system-ui, sans-serif;
 
   color-scheme: light;
   font-family: var(--font);
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.6;
   color: var(--text);
   background: var(--bg);
 }
 
-/* Reversed colours from the canvas's "on dark" artboard. */
+/* ---- Night side (dark): the canvas's "Dark mode" pattern ---- */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0b0a10;
-    --surface: #15131b;
-    --text: #f3effa;
+    --bg: #0b0a10; /* space */
+    --surface: #0f0e15;
+    --raised: #15131c; /* orbit 1 */
+    --text: #f3effa; /* starlight */
     --text-muted: #a39fad;
     --border: #2a2733;
+    --border-strong: #3a3644;
+    --border-hover: #8a8594;
     --accent-soft: #22143c;
-    --focus: var(--lavender);
-    --ok: #3fb950;
-    --error: #f85149;
+    --accent-soft-text: var(--lavender);
+    --moon: var(--lavender);
+    --ring: var(--lavender); /* 6.6:1 on the dark ground */
+    --ok: #4ade80;
+    --error: #f87171;
+    --danger-text: #f87171;
+    --danger-soft: rgb(248 113 113 / 14%);
+    --danger-border: rgb(248 113 113 / 40%);
+    --danger-panel: rgb(248 113 113 / 8%);
+    --danger-disc: rgb(248 113 113 / 18%);
+    --danger-title: #fecaca;
+    --danger-body: #f87171;
+    --disabled-bg: #15131c;
+    --disabled-border: #5b5762;
+    --shade: rgb(0 0 0 / 30%);
+    --elevation-2: 0 6px 16px rgb(0 0 0 / 40%);
     --logo-cut: var(--bg);
     --logo-word-accent: var(--lavender);
 
@@ -71,9 +139,26 @@ body {
   margin: 0;
 }
 
+h1 {
+  margin: 0 0 var(--space-6);
+  font-size: 36px;
+  line-height: 40px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+/* The orbit ring: focus is a ring with a gap, never only a colour change. */
 :focus-visible {
-  outline: 2px solid var(--focus);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+  }
 }
 
 /* ---- Logo ---- */
@@ -122,7 +207,7 @@ body {
   color: var(--logo-word-accent);
 }
 
-/* ---- Layout ---- */
+/* ---- Layout and sidebar ---- */
 
 .layout {
   display: flex;
@@ -130,72 +215,736 @@ body {
 }
 
 .menu {
-  width: 12rem;
-  padding: 1rem;
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  padding: var(--space-4) 14px;
   border-right: 1px solid var(--border);
   background: var(--surface);
+  display: flex;
+  flex-direction: column;
 }
 
 .menu-title {
-  margin: 0 0 1.25rem;
+  margin: 0 0 var(--space-6);
+  padding: 2px 6px;
 }
 
+/* Items hang off one orbit line; a moon on the line marks the current page. */
 .menu ul {
+  position: relative;
   margin: 0;
   padding: 0;
   list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu ul::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--border-strong);
 }
 
 .menu a {
-  display: block;
-  padding: 0.25rem 0.5rem;
-  color: inherit;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  margin-left: 20px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text-muted);
   text-decoration: none;
-  border-radius: 6px;
+  transition:
+    background var(--motion-hover),
+    color var(--motion-hover);
 }
 
 .menu a:hover {
+  color: var(--text);
   background: var(--accent-soft);
 }
 
-/* React Router adds class "active" to the link of the current page. */
+/* React Router adds class "active" and aria-current="page" to the current link. */
 .menu a.active {
-  background: var(--accent-soft);
-  color: var(--text);
   font-weight: 700;
+  color: var(--accent-soft-text);
+  background: var(--raised);
+  box-shadow: 0 1px 2px rgb(17 16 21 / 6%);
+}
+
+.menu a.active::before {
+  content: "";
+  position: absolute;
+  left: -15px;
+  top: 13px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--moon);
+  box-shadow: 0 0 0 3px var(--surface);
 }
 
 .menu-account {
-  margin-top: 2rem;
-  padding-top: 1rem;
+  margin-top: auto;
+  padding-top: var(--space-4);
   border-top: 1px solid var(--border);
 }
 
 .menu-user {
-  margin: 0 0 0.5rem;
-  font-size: 0.875rem;
+  margin: 0 0 var(--space-2);
+  font-size: 12px;
+  line-height: 18px;
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
 
-button {
+.content {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--space-8) var(--space-12);
+}
+
+/* Phones: the menu becomes a bar across the top. */
+@media (width <= 720px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .menu {
+    width: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .menu ul {
+    flex-flow: row wrap;
+  }
+
+  .menu ul::before,
+  .menu a.active::before {
+    display: none;
+  }
+
+  .menu a {
+    margin-left: 0;
+  }
+
+  .menu-account {
+    margin-top: var(--space-4);
+  }
+
+  .content {
+    padding: var(--space-6) var(--space-4);
+  }
+}
+
+/* ---- Button ---- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  box-sizing: border-box;
+  height: var(--control-md);
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   font: inherit;
-  padding: 0.375rem 0.875rem;
-  border: 0;
-  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--motion-hover),
+    border-color var(--motion-hover),
+    box-shadow var(--motion-hover),
+    transform var(--motion-press);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--ring);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-sm {
+  height: var(--control-sm);
+  padding: 0 12px;
+  border-radius: var(--radius-sm-small);
+  font-size: 13px;
+}
+
+.btn-primary {
   background: var(--accent);
   color: var(--accent-text);
+  box-shadow: inset 0 -2px 0 var(--shade);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--violet-deep);
+  box-shadow:
+    inset 0 -2px 0 var(--shade),
+    0 0 0 4px var(--accent-soft);
+}
+
+.btn-secondary {
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--lavender);
+}
+
+.btn-outline {
+  border-color: var(--border-strong);
+  background: var(--raised);
+  color: var(--text);
+}
+
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--lavender);
+  background: var(--accent-soft);
+}
+
+.btn-ghost {
+  padding: 0 14px;
+  background: transparent;
+  color: var(--text);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.btn-danger {
+  background: var(--danger-button);
+  color: #ffffff;
+  box-shadow: inset 0 -2px 0 var(--shade);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger-button-hover);
+}
+
+.btn-danger-text {
+  color: var(--danger-text);
+}
+
+.btn-danger-text:hover:not(:disabled) {
+  background: var(--danger-soft);
+}
+
+/* Eclipsed: a dashed edge, so it reads as off even without colour. */
+.btn:disabled {
+  border: 1px dashed var(--disabled-border);
+  background: var(--disabled-bg);
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ---- Fields: label, input, textarea, select ---- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field-label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 700;
+}
+
+.field-optional {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.field-error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--danger-text);
+}
+
+.field-error::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--error);
+  vertical-align: middle;
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--control-md);
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  transition:
+    border-color var(--motion-hover),
+    box-shadow var(--motion-hover);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.input:hover:not(:disabled) {
+  border-color: var(--border-hover);
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--violet);
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--ring);
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+.input:disabled {
+  border-style: dashed;
+  border-color: var(--disabled-border);
+  background: var(--disabled-bg);
+  color: var(--text-muted);
+}
+
+.textarea {
+  height: auto;
+  min-height: 88px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.select {
+  padding-right: 32px;
+}
+
+/* ---- Checkbox: a small rectangle with the orbit corner ---- */
+
+.checkbox {
+  appearance: none;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1.5px solid var(--border-hover);
+  border-radius: var(--radius-xs);
+  background: var(--raised) center / 12px no-repeat;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-press),
+    border-color var(--motion-press);
+}
+
+.checkbox:checked {
+  border-color: var(--violet);
+  background-color: var(--violet);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+}
+
+.checkbox:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--ring);
+}
+
+.checkbox:disabled {
+  border-style: dashed;
+  cursor: wait;
+}
+
+/* ---- Badge ---- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 22px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-xs);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.badge-default {
+  background: var(--violet);
+  color: #ffffff;
+}
+
+.badge-secondary {
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+}
+
+.badge-outline {
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+}
+
+.badge-danger {
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+/* ---- Alert ---- */
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+}
+
+.alert-disc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+  font-weight: 700;
+}
+
+.alert-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.alert-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.alert-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.alert-danger {
+  border-color: var(--danger-border);
+  background: var(--danger-panel);
+}
+
+.alert-danger .alert-disc {
+  background: var(--danger-disc);
+  color: var(--danger-body);
+}
+
+.alert-danger .alert-title {
+  color: var(--danger-title);
+}
+
+.alert-danger .alert-text {
+  color: var(--danger-body);
+}
+
+/* ---- Toast: bottom right, at most three ---- */
+
+.toasts {
+  position: fixed;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.toast {
+  box-sizing: border-box;
+  width: min(400px, calc(100vw - 2 * var(--space-4)));
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 14px var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+  box-shadow: var(--elevation-2);
+}
+
+.toast-moon {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--moon);
+}
+
+.toast-danger .toast-moon {
+  background: var(--error);
+}
+
+.toast-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toast-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.toast-text {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+@media (width <= 720px) {
+  .toasts {
+    top: var(--space-4);
+    right: var(--space-4);
+    bottom: auto;
+    left: var(--space-4);
+  }
+
+  .toast {
+    width: 100%;
+  }
+}
+
+/* ---- Todos page ---- */
+
+.todos {
+  max-width: 880px;
+}
+
+/* Orbit tabs: the views sit on a line; the current one has a moon at the end of its
+   underline. Links, not role="tab": each view has its own address. */
+.view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  margin-bottom: var(--space-6);
+  border-bottom: 1px solid var(--border);
+}
+
+.view-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  font-size: 14px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--motion-hover);
+}
+
+.view-tab:hover {
+  color: var(--text);
+}
+
+.view-tab[aria-current="page"] {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.view-tab[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--violet);
+}
+
+.view-tab[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  right: -4px;
+  bottom: -5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--moon);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.todo-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px 140px auto;
+  align-items: end;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.todo-add-error {
+  grid-column: 1 / -1;
+}
+
+@media (width <= 720px) {
+  .todo-add {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .todo-add-title,
+  .todo-add-button {
+    grid-column: 1 / -1;
+  }
+}
+
+.todo-list {
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--raised);
+  overflow: hidden;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  box-sizing: border-box;
+  padding: 10px var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.todo-item:last-child {
+  border-bottom: 0;
+}
+
+.todo-title {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  overflow-wrap: anywhere;
   cursor: pointer;
 }
 
-button:hover {
-  background: var(--violet-deep);
+.todo-title:hover:not(:disabled) {
+  color: var(--accent-soft-text);
 }
 
-.content {
-  flex: 1;
-  padding: 1rem 2rem;
+.todo-item-done .todo-title {
+  color: var(--text-muted);
+  text-decoration: line-through;
 }
+
+.todo-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.todo-date {
+  min-width: 52px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.todo-item-editing {
+  display: block;
+  padding: var(--space-4);
+  background: var(--surface);
+}
+
+.todo-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.todo-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.todo-edit-actions,
+.todo-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.todo-confirm span {
+  margin-right: var(--space-2);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Empty: a dashed orbit marks a place that is still empty. */
+.todos-empty {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-6);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.todos-loading {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* ---- Dashboard (until B9) ---- */
 
 .api-status-ok {
   color: var(--ok);
