@@ -362,3 +362,5 @@ Branch `b5/frontend`. #25 (pull request 1) merged first.
   22 November (Kolkata), as designed.
 - Not checked by Claude: the page in a real browser (Playwright is not installed in this
   session). The owner's browser check covers it.
+- Owner's browser check (first look): the page stopped at 880 px and left an empty band
+  on a wide window. It now fills the space beside the menu.

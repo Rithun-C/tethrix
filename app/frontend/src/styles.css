@@ -756,8 +756,9 @@ h1 {
 
 /* ---- Todos page ---- */
 
+/* The page fills the space beside the menu (owner's review, 2026-11-22). */
 .todos {
-  max-width: 880px;
+  width: 100%;
 }
 
 /* Orbit tabs: the views sit on a line; the current one has a moon at the end of its
