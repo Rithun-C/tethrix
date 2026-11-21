@@ -9,7 +9,8 @@
 ## Logo
 
 The mark is the moon Tethys with its large crater and canyon, on an orbit arc. The
-wordmark is "teth" in ink and "rix" in violet, set in Sora SemiBold.
+wordmark is "teth" in ink and "rix" in violet, set in Sansation Bold (the canvas used
+Sora SemiBold; the owner changed the font on 2026-11-22).
 
 | File | Use |
 |---|---|
@@ -47,23 +48,15 @@ dark background about 6.5:1.
 
 ## Type
 
-| Font | Used for | Weights | Licence |
-|---|---|---|---|
-| Permanent Marker | All text in the app (owner's choice, 2026-11-22) | 400 only | Apache 2.0 |
-| Sora | The "tethrix" wordmark in the logo, as on the canvas | 600 only | SIL Open Font Licence |
+Sansation, for all text and the wordmark (owner's choice, 2026-11-22; it replaced Sora
+from the canvas). Weights 400 (Regular) and 700 (Bold), Latin only. Licence: SIL Open
+Font Licence.
 
-Both are Google Fonts, Latin only, served from our own `/assets` through pinned npm
-packages (`@fontsource/permanent-marker` 5.3.0, `@fontsource/sora` 5.3.0), not from
-Google's servers. These are the same font files Google serves. Linking Google Fonts
-directly would mean two things: the Content Security Policy would have to allow
-`fonts.googleapis.com` and `fonts.gstatic.com`, and every visitor's browser would tell
-Google each time the app opens. Self-hosting avoids both.
-
-Permanent Marker has one weight, so bold text is turned off
-(`font-synthesis-weight: none`) instead of letting the browser smear a fake bold. It is a
-handwritten display font; if long text such as journal entries becomes hard to read, the
-component library design can give body text a plainer font and keep the marker for
-headings.
+It is a Google Font, served from our own `/assets` through the pinned npm package
+`@fontsource/sansation` 5.3.0, not from Google's servers. These are the same font files
+Google serves. Linking Google Fonts directly would mean two things: the Content Security
+Policy would have to allow `fonts.googleapis.com` and `fonts.gstatic.com`, and every
+visitor's browser would tell Google each time the app opens. Self-hosting avoids both.
 
 ## What is not renamed
 

@@ -1,17 +1,17 @@
 /*
- * Tethrix styles. Colours and the font come from the owner's logo canvas
+ * Tethrix styles. Colours come from the owner's logo canvas, the font is the owner's
+ * choice
  * (docs/brand.md). Every colour is a design token below; components use the tokens,
  * never a raw colour, so the component library (owner's design, B5 on) and dark mode
  * only change values here.
  */
 
 /*
- * Fonts, served from our own /assets (no Google request, CSP font-src 'self'):
- * Permanent Marker for all text (owner's choice, 2026-11-22; one weight only),
- * Sora SemiBold for the "tethrix" wordmark only, as drawn on the logo canvas.
+ * Sansation for all text and the wordmark (owner's choice, 2026-11-22), served from
+ * our own /assets (no Google request, CSP font-src 'self'). Regular and Bold only.
  */
-@import "@fontsource/permanent-marker/latin-400.css";
-@import "@fontsource/sora/latin-600.css";
+@import "@fontsource/sansation/latin-400.css";
+@import "@fontsource/sansation/latin-700.css";
 
 :root {
   /* Brand */
@@ -39,13 +39,10 @@
   --logo-word: var(--text);
   --logo-word-accent: var(--violet);
 
-  --font: "Permanent Marker", system-ui, sans-serif;
-  --font-logo: "Sora", system-ui, sans-serif;
+  --font: "Sansation", system-ui, sans-serif;
 
   color-scheme: light;
   font-family: var(--font);
-  /* Permanent Marker has one weight; do not let the browser fake a bold one. */
-  font-synthesis-weight: none;
   line-height: 1.5;
   color: var(--text);
   background: var(--bg);
@@ -114,9 +111,8 @@ body {
 }
 
 .logo-word {
-  font-family: var(--font-logo);
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 1;
   color: var(--logo-word);
@@ -166,7 +162,7 @@ body {
 .menu a.active {
   background: var(--accent-soft);
   color: var(--text);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .menu-account {
