@@ -66,7 +66,7 @@ services:
   # identical locally and in AWS. It makes new signing keys at every start: after
   # restarting it, restart the backend too (`make down && make up`).
   oidc:
-    image: ghcr.io/navikt/mock-oauth2-server:6.1.4@sha256:647dd8c78a54f0e6fcd58d79c884e612f8f998a0662276f3e1db22e464a50192
+    image: ghcr.io/navikt/mock-oauth2-server:7.0.1@sha256:eb07a0a65007c34c40c7b849592a47e6299128a514a5c6c582a53451cc6e3390
     <<: *hardening
     environment:
       JSON_CONFIG: >-
